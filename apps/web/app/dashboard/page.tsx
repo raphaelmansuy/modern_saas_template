@@ -2,8 +2,21 @@
 
 import { UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
+import { useEffect } from 'react'
+import { useToast } from '../../components/Toast'
 
 export default function Dashboard() {
+  const { addToast } = useToast()
+
+  useEffect(() => {
+    // Show welcome message when user first arrives at dashboard
+    const timer = setTimeout(() => {
+      addToast('Welcome back! You have successfully signed in.', 'success')
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [addToast])
+
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">

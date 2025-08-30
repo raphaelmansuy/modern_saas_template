@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { SignedIn, SignedOut, SignInButton, SignOutButton } from '@clerk/nextjs'
+import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
+import { SignOutWithFeedback } from '../components/SignOutWithFeedback'
 
 export default function Home() {
   return (
@@ -10,17 +11,30 @@ export default function Home() {
 
         <SignedOut>
           <SignInButton mode="modal">
-            <button className="bg-blue-500 text-white px-4 py-2 rounded mr-4">Sign In</button>
+            <button className="bg-blue-500 text-white px-4 py-2 rounded mr-4 hover:bg-blue-600 transition-colors">
+              Sign In
+            </button>
           </SignInButton>
+          <Link href="/sign-up" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors">
+            Sign Up
+          </Link>
         </SignedOut>
 
         <SignedIn>
-          <Link href="/dashboard" className="bg-green-500 text-white px-4 py-2 rounded mr-4">Go to Dashboard</Link>
-          <Link href="/profile" className="bg-blue-500 text-white px-4 py-2 rounded mr-4">My Profile</Link>
-          <Link href="/admin" className="bg-purple-500 text-white px-4 py-2 rounded mr-4">Admin Panel</Link>
-          <SignOutButton>
-            <button className="bg-red-500 text-white px-4 py-2 rounded">Sign Out</button>
-          </SignOutButton>
+          <div className="flex flex-col gap-4 items-center">
+            <div className="flex gap-4">
+              <Link href="/dashboard" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors">
+                Go to Dashboard
+              </Link>
+              <Link href="/profile" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                My Profile
+              </Link>
+              <Link href="/admin" className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors">
+                Admin Panel
+              </Link>
+            </div>
+            <SignOutWithFeedback />
+          </div>
         </SignedIn>
       </div>
     </main>
