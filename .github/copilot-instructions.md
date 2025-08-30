@@ -10,21 +10,50 @@ This is a **monorepo SaaS starter kit** using Turbo for orchestration with three
 
 ## Tech Stack Patterns
 
-### Development Workflow
+### Development Workflow (Docker-First)
 ```bash
-# Start all services (frontend + backend + database)
-bun run dev
-
-# Full-stack development with Docker
+# PRIMARY: Full-stack development with Docker (recommended)
 docker-compose up --build
 
-# Database operations
+# Alternative: Local development (requires local PostgreSQL)
+bun run dev
+
+# Database operations (works in both Docker and local)
 cd packages/db && bun run generate  # Generate migrations
 cd packages/db && bun run push      # Push schema changes
 ```
 
+### Docker Development Setup
+- **Hot Reloading**: Enabled by default with volume mounts
+- **Services**: Frontend (port 3000), API (port 3001), Database (port 5432)
+- **Environment**: All services share `.env` file via volume mounts
+- **Dependencies**: Automatic dependency installation on container build
+- **File Watching**: Changes trigger automatic rebuilds and reloads
+
+### Docker Workflow
+```bash
+# Start development environment
+docker-compose up --build
+
+# Make code changes - hot reloading automatically applies them
+# Frontend: http://localhost:3000
+# API: http://localhost:3001
+# Database: localhost:5432
+
+# View logs from specific service
+docker-compose logs -f web
+docker-compose logs -f api
+
+# Stop environment
+docker-compose down
+
+# Rebuild after dependency changes
+docker-compose up --build --force-recreate
+```
+
 ### Environment Setup
 - Copy `.env.example` to `.env`
+- **Database URL**: Use `postgresql://user:password@db:5432/saas_db` for Docker, `postgresql://user:password@localhost:5432/saas_db` for local development
 - All external services use prefixed environment variables:
   - `NEXT_PUBLIC_CLERK_*` - Authentication
   - `STRIPE_*` - Payment processing
@@ -106,8 +135,11 @@ export default {
 - **Environment**: Service-prefixed variables in `.env`
 
 ### Development Commands
-- `bun run dev` - Start all services via Turbo
-- `docker-compose up --build` - Full development environment
+- `docker-compose up --build` - **PRIMARY**: Start all services with hot reloading
+- `docker-compose up -d --build` - Start in background
+- `docker-compose down` - Stop all services
+- `docker-compose logs -f` - View logs from all services
+- `bun run dev` - Alternative local development (requires local PostgreSQL)
 - Database migrations: `cd packages/db && bun run generate`
 
 ### Route Protection
@@ -174,7 +206,8 @@ bun run build   # Production build
 - **PostHog**: User analytics & behavior tracking
 
 ### Cross-Service Communication
-- Frontend calls API at `http://localhost:3001`
+- Frontend calls API at `http://localhost:3001` (or `http://api:3001` in Docker)
 - Shared database connection via `packages/db/`
-- Environment variables shared across services</content>
+- Environment variables shared across services
+- Database URL: `postgresql://user:password@db:5432/saas_db` (Docker) or `postgresql://user:password@localhost:5432/saas_db` (local)</content>
 <parameter name="filePath">/Users/raphaelmansuy/Github/10-demos/stack01/.github/copilot-instructions.md
