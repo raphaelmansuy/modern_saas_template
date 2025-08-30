@@ -3,7 +3,7 @@ import { authMiddleware } from '@clerk/nextjs'
 export default authMiddleware({
   publicRoutes: ['/', '/dashboard', '/sign-in', '/sign-up'],
   ignoredRoutes: ['/api/(.*)'],
-  afterAuth(auth, req) {
+  afterAuth: async (auth, req) => {
     // Handle signout redirect
     if (auth.isPublicRoute) {
       return
