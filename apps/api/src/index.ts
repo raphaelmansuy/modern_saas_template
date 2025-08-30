@@ -6,9 +6,14 @@ import { createClerkClient } from '@clerk/clerk-sdk-node'
 
 const app = new Hono()
 
+// Get allowed origins from environment variables
+const allowedOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : []
+
 // Add CORS middleware
 app.use('/*', cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  origin: allowedOrigins,
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }))

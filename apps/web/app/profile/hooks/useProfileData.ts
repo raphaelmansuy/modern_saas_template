@@ -1,5 +1,6 @@
 import { useUser, useAuth } from '@clerk/nextjs'
 import { useState, useEffect } from 'react'
+import { apiClient } from '../../../lib/api'
 
 export const useProfileData = () => {
   const { user, isLoaded } = useUser()
@@ -30,16 +31,13 @@ export const useProfileData = () => {
 
     try {
       const token = await getToken()
-      const response = await fetch('http://localhost:3001/api/user/profile', {
-        method: 'PUT',
+      const response = await apiClient.put('/api/user/profile', {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      }, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-        }),
       })
 
       if (!response.ok) {
