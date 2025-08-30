@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
-import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
+import { SignedIn, SignedOut, SignInButton, useUser } from '@clerk/nextjs'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -26,6 +26,7 @@ interface CheckoutFormProps {
 function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
   const stripe = useStripe()
   const elements = useElements()
+  const { user } = useUser()
   const [isProcessing, setIsProcessing] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -39,7 +40,14 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
     setIsProcessing(true)
 
     try {
-      // Create payment intent
+      // Create payment intent with customer information
+      const customerInfo = user ? {
+        customerId: user.id,
+        customerEmail: user.primaryEmailAddress?.emailAddress,
+        customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        customerPhone: user.phoneNumbers?.[0]?.phoneNumber,
+      } : null
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/create-payment-intent`, {
         method: 'POST',
         headers: {
@@ -48,6 +56,7 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
         body: JSON.stringify({
           productId: product.id,
           quantity: 1,
+          customerInfo,
         }),
       })
 

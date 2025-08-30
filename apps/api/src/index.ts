@@ -144,12 +144,18 @@ app.get('/api/products/:id', async (c) => {
 const createPaymentIntentSchema = z.object({
   productId: z.number(),
   quantity: z.number().min(1).default(1),
+  customerInfo: z.object({
+    customerId: z.string(),
+    customerEmail: z.string().email().optional(),
+    customerName: z.string().optional(),
+    customerPhone: z.string().optional(),
+  }).optional(),
 })
 
 // Create payment intent for a product
 app.post('/api/create-payment-intent', zValidator('json', createPaymentIntentSchema), async (c) => {
   try {
-    const { productId, quantity } = c.req.valid('json')
+    const { productId, quantity, customerInfo } = c.req.valid('json')
     
     // Get product from database
     const product = await db.select().from(products).where(eq(products.id, productId)).limit(1)
@@ -165,14 +171,36 @@ app.post('/api/create-payment-intent', zValidator('json', createPaymentIntentSch
     
     // Check if Stripe is properly configured
     if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== 'sk_test_...') {
+      // Prepare metadata for Stripe payment intent
+      const metadata: Record<string, string> = {
+        productId: productId.toString(),
+        quantity: quantity.toString(),
+        productName: selectedProduct.name,
+        productDescription: selectedProduct.description || '',
+        currency: selectedProduct.currency || 'usd',
+      }
+
+      // Add customer information to metadata if available
+      if (customerInfo) {
+        if (customerInfo.customerId) metadata.customerId = customerInfo.customerId
+        if (customerInfo.customerEmail) metadata.customerEmail = customerInfo.customerEmail
+        if (customerInfo.customerName) metadata.customerName = customerInfo.customerName
+        if (customerInfo.customerPhone) metadata.customerPhone = customerInfo.customerPhone
+      }
+
       // Create real payment intent with Stripe
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: selectedProduct.currency || 'usd',
-        metadata: {
-          productId: productId.toString(),
-          quantity: quantity.toString(),
-        },
+        metadata,
+        // Include customer information if email is available
+        ...(customerInfo?.customerEmail && {
+          receipt_email: customerInfo.customerEmail,
+        }),
+        // Add description with customer name if available
+        ...(customerInfo?.customerName && {
+          description: `Purchase by ${customerInfo.customerName} - ${selectedProduct.name}`,
+        }),
       })
       clientSecret = paymentIntent.client_secret!
     } else {
@@ -219,7 +247,23 @@ app.post('/api/webhooks', async (c) => {
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object as Stripe.PaymentIntent
       console.log('PaymentIntent was successful!', paymentIntent.id)
-      // TODO: Update order status, send confirmation email, etc.
+      
+      // Extract customer information from metadata
+      const customerInfo = {
+        customerId: paymentIntent.metadata.customerId,
+        customerEmail: paymentIntent.metadata.customerEmail,
+        customerName: paymentIntent.metadata.customerName,
+        customerPhone: paymentIntent.metadata.customerPhone,
+        productId: paymentIntent.metadata.productId,
+        productName: paymentIntent.metadata.productName,
+        quantity: paymentIntent.metadata.quantity,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+      }
+      
+      console.log('Customer information:', customerInfo)
+      
+      // TODO: Save order to database, send confirmation email, etc.
       break
     case 'payment_method.attached':
       const paymentMethod = event.data.object as Stripe.PaymentMethod

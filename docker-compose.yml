@@ -49,6 +49,9 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/saas_db
+      - API_URL=${API_URL}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - CORS_ORIGINS=${CORS_ORIGINS}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - RESEND_API_KEY=${RESEND_API_KEY}

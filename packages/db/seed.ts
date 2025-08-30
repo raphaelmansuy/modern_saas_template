@@ -40,6 +40,13 @@ async function seedProducts() {
         price: 1499, // $14.99 in cents
         currency: 'usd',
       },
+      {
+        name: 'AssistGenie',
+        description: 'AI-powered assistant for productivity and automation',
+        price: 1000, // HK$10.00 in cents
+        currency: 'hkd',
+        stripeProductId: 'prod_OCXhAmrul7KbCq',
+      },
     ]
 
     for (const product of sampleProducts) {
