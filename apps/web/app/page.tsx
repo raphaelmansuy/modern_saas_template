@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
+import { SignedIn, SignedOut, SignInButton, SignOutButton } from '@clerk/nextjs'
 
 export default function Home() {
   return (
@@ -17,7 +17,10 @@ export default function Home() {
         <SignedIn>
           <Link href="/dashboard" className="bg-green-500 text-white px-4 py-2 rounded mr-4">Go to Dashboard</Link>
           <Link href="/profile" className="bg-blue-500 text-white px-4 py-2 rounded mr-4">My Profile</Link>
-          <Link href="/admin" className="bg-purple-500 text-white px-4 py-2 rounded">Admin Panel</Link>
+          <Link href="/admin" className="bg-purple-500 text-white px-4 py-2 rounded mr-4">Admin Panel</Link>
+          <SignOutButton>
+            <button className="bg-red-500 text-white px-4 py-2 rounded">Sign Out</button>
+          </SignOutButton>
         </SignedIn>
       </div>
     </main>
