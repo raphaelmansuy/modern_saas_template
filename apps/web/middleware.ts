@@ -1,20 +1,13 @@
-import { authMiddleware } from '@clerk/nextjs'
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
-export default authMiddleware({
-  publicRoutes: ['/', '/dashboard', '/sign-in', '/sign-up'],
-  ignoredRoutes: ['/api/(.*)'],
-  afterAuth: async (auth, req) => {
-    // Handle signout redirect
-    if (auth.isPublicRoute) {
-      return
-    }
+const isPublicRoute = createRouteMatcher(['/', '/dashboard', '/sign-in', '/sign-up'])
 
-    if (!auth.userId) {
-      // Redirect to sign-in page
-      const signInUrl = new URL('/sign-in', req.url)
-      return Response.redirect(signInUrl)
-    }
-  }
+export default clerkMiddleware(async (auth, req) => {
+  // Allow public routes to pass through
+  if (isPublicRoute(req)) return
+
+  // Protect all other routes
+  await auth.protect()
 })
 
 export const config = {
