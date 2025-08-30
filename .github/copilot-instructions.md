@@ -134,6 +134,14 @@ export default {
 - **Database**: All schema and queries in `packages/db/`
 - **Environment**: Service-prefixed variables in `.env`
 
+### Naming Conventions
+- **Variables**: Use camelCase (e.g., `userName`, `apiResponse`, `isActive`)
+- **Functions**: Use camelCase (e.g., `getUserData()`, `processPayment()`, `validateInput()`)
+- **Files**: Use kebab-case (e.g., `user-profile.tsx`, `api-handler.ts`, `database-schema.ts`)
+- **Database Tables/Columns**: Use snake_case (e.g., `user_id`, `created_at`, `is_admin`)
+- **Components**: Use PascalCase for React components (e.g., `UserProfile`, `ApiHandler`), but prefer kebab-case for file names
+- **Constants**: Use UPPER_SNAKE_CASE (e.g., `MAX_RETRY_COUNT`, `API_BASE_URL`)
+
 ### Development Commands
 - `docker-compose up --build` - **PRIMARY**: Start all services with hot reloading
 - `docker-compose up -d --build` - Start in background
