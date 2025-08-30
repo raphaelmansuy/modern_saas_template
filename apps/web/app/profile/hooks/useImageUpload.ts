@@ -6,7 +6,7 @@ import { IMAGE_CONFIG, UPLOAD_CONFIG } from '../utils/constants'
 
 export const useImageUpload = () => {
   const { user } = useUser()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // Upload state
   const [isUploading, setIsUploading] = useState(false)

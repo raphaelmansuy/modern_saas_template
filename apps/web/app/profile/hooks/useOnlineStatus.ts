@@ -4,6 +4,9 @@ export const useOnlineStatus = () => {
   const [isOnline, setIsOnline] = useState(true)
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return
+
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
 

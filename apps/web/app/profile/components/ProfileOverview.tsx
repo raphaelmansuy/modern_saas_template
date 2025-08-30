@@ -7,7 +7,7 @@ import { UploadProgress } from './UploadProgress'
 interface ProfileOverviewProps {
   user: UserType
   previewUrl: string | null
-  fileInputRef: React.RefObject<HTMLInputElement>
+  fileInputRef: React.RefObject<HTMLInputElement | null>
   isDragOver: boolean
   selectedFile: File | null
   selectedName: string | null
@@ -84,7 +84,7 @@ export const ProfileOverview = ({
             )}
 
             <input
-              ref={fileInputRef}
+              ref={fileInputRef as React.LegacyRef<HTMLInputElement>}
               type="file"
               accept="image/*"
               onChange={onFileSelect}
