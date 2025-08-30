@@ -21,6 +21,7 @@
     "docker:rebuild": "docker-compose up --build --force-recreate",
     "db:generate": "cd packages/db && bun run generate",
     "db:push": "cd packages/db && bun run push",
+    "db:seed": "cd packages/db && bun run seed",
     "db:studio": "cd packages/db && drizzle-kit studio",
     "db:reset": "docker-compose down -v && docker-compose up -d db",
     "clean": "docker-compose down -v && rm -rf node_modules apps/*/node_modules packages/*/node_modules",

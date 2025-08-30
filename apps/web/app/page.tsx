@@ -22,9 +22,12 @@ export default function Home() {
 
         <SignedIn>
           <div className="flex flex-col gap-4 items-center">
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap justify-center">
               <Link href="/dashboard" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors">
                 Go to Dashboard
+              </Link>
+              <Link href="/products" className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors">
+                Browse Products
               </Link>
               <Link href="/profile" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
                 My Profile
