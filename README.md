@@ -32,16 +32,86 @@ This is a starter kit for building SaaS applications using the specified tech st
 
 3. **Start development servers:**
    ```bash
-   # Option 1: Local development
-   bun run dev
+   # RECOMMENDED: Docker development (includes PostgreSQL)
+   bun run dev:docker
 
-   # Option 2: Docker Compose
-   docker-compose up --build
+   # Alternative: Local development (requires local PostgreSQL)
+   bun run dev:local
+
+   # Or use Make commands
+   make dev
    ```
 
 4. **Open your browser:**
    - Frontend: http://localhost:3000
    - API: http://localhost:3001
+
+## Development Commands
+
+### Docker Development (Recommended)
+```bash
+# Start all services with hot reloading
+bun run dev:docker
+
+# Start in background
+bun run dev:docker:background
+
+# Stop services
+bun run docker:down
+
+# View logs
+bun run docker:logs
+bun run docker:logs:web
+bun run docker:logs:api
+bun run docker:logs:db
+
+# Rebuild containers
+bun run docker:rebuild
+
+# Reset database (removes all data)
+bun run db:reset
+```
+
+### Database Management
+```bash
+# Generate migrations
+bun run db:generate
+
+# Push schema changes
+bun run db:push
+
+# Open Drizzle Studio
+bun run db:studio
+```
+
+### Local Development
+```bash
+# Start local development (requires PostgreSQL)
+bun run dev:local
+
+# Install dependencies
+bun run install
+
+# Clean up
+bun run clean
+```
+
+### Make Commands (Alternative)
+```bash
+# Quick development start
+make dev
+
+# Database operations
+make db-studio
+make db-reset
+
+# Logs
+make logs
+make logs-web
+
+# Cleanup
+make clean
+```
 
 ## Features
 
@@ -78,23 +148,29 @@ Copy `.env.example` to `.env` and fill in your API keys:
 
 ### Available Scripts
 ```bash
-# Install dependencies
-bun install
+# Development
+bun run dev:docker          # Start Docker development (recommended)
+bun run dev:local           # Start local development
+bun run dev                 # Start with Turbo (local)
 
-# Start development servers
-bun run dev
+# Docker management
+bun run docker:up           # Start Docker services
+bun run docker:down         # Stop Docker services
+bun run docker:logs         # View all logs
+bun run docker:rebuild      # Rebuild containers
 
-# Build for production
-bun run build
+# Database
+bun run db:generate         # Generate migrations
+bun run db:push             # Push schema changes
+bun run db:studio           # Open Drizzle Studio
+bun run db:reset            # Reset database
 
-# Start production servers
-bun run start
-
-# Run tests
-bun run test
-
-# Run linting
-bun run lint
+# Utilities
+bun run install             # Install dependencies
+bun run clean               # Clean up Docker volumes and node_modules
+bun run lint                # Run linting
+bun run test                # Run tests
+bun run build               # Build for production
 ```
 
 ## Docker Development
@@ -142,35 +218,3 @@ bun run start
 ## License
 
 This project is licensed under the MIT License.
-
-## Next Steps
-
-- Set up Clerk for authentication
-- Configure Stripe for payments
-- Add Sentry for monitoring
-- Integrate PostHog for analytics
-- Deploy to Vercel
-
-## Features
-
-- **Authentication**: Clerk-powered user authentication with protected admin routes
-- **Admin Dashboard**: Protected admin panel at `/admin` with user management, analytics, and settings
-- **Database**: PostgreSQL with Drizzle ORM for type-safe queries
-- **State Management**: Zustand for client-side state
-- **Styling**: Tailwind CSS with responsive design
-
-## Project Structure
-
-- `apps/web`: Next.js frontend
-- `apps/api`: Hono.js backend
-- `packages/db`: Drizzle database schema
-- `packages/ui`: Shared UI components (to be added)
-- `packages/auth`: Auth utilities (to be added)
-
-## Next Steps
-
-- Set up Clerk for authentication
-- Configure Stripe for payments
-- Add Sentry for monitoring
-- Integrate PostHog for analytics
-- Deploy to Vercel
