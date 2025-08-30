@@ -24,7 +24,7 @@
     "db:studio": "cd packages/db && drizzle-kit studio",
     "db:reset": "docker-compose down -v && docker-compose up -d db",
     "clean": "docker-compose down -v && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
-    "install": "bun install",
+    "install-bun": "bun install",
     "setup": "./setup.sh",
     "lint": "turbo lint",
     "test": "turbo test"

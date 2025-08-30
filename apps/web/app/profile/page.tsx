@@ -3,6 +3,9 @@
 import { useUser, useAuth } from '@clerk/nextjs'
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
+import imageCompression from 'browser-image-compression'
+import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
+import 'react-image-crop/dist/ReactCrop.css'
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser()
@@ -20,14 +23,23 @@ export default function ProfilePage() {
   const [originalFirstName, setOriginalFirstName] = useState('')
   const [originalLastName, setOriginalLastName] = useState('')
 
+  // Image cropping and compression state
+  const [crop, setCrop] = useState<Crop>()
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>()
+  const [showCropModal, setShowCropModal] = useState(false)
+  const [imageRef, setImageRef] = useState<HTMLImageElement | null>(null)
+  const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null)
+  const [isCompressing, setIsCompressing] = useState(false)
+
   // Check if there are any changes to enable/disable save button
   const hasChanges = firstName.trim() !== originalFirstName || lastName.trim() !== originalLastName
 
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl)
+      if (croppedImageUrl) URL.revokeObjectURL(croppedImageUrl)
     }
-  }, [previewUrl])
+  }, [previewUrl, croppedImageUrl])
 
   // Initialize form with user data
   useEffect(() => {
@@ -105,15 +117,15 @@ export default function ProfilePage() {
       return
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'File size must be less than 5MB.' })
+    // Validate file size (max 10MB for initial upload, will be compressed)
+    if (file.size > 10 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'File size must be less than 10MB.' })
       return
     }
 
     setSelectedFile(file)
     setSelectedName(file.name)
-    setMessage({ type: 'info', text: 'Preview the image and click Confirm to upload.' })
+    setMessage({ type: 'info', text: 'Image selected. Click "Crop & Compress" to process the image.' })
     const url = URL.createObjectURL(file)
     setPreviewUrl(url)
   }
@@ -132,7 +144,14 @@ export default function ProfilePage() {
     setMessage(null)
 
     try {
-      await user!.setProfileImage({ file: selectedFile })
+      // If the file hasn't been compressed yet, compress it
+      let fileToUpload = selectedFile
+      if (selectedFile.size > 1024 * 1024) { // If larger than 1MB, compress
+        setMessage({ type: 'info', text: 'Compressing image before upload...' })
+        fileToUpload = await compressImage(selectedFile)
+      }
+
+      await user!.setProfileImage({ file: fileToUpload })
       setMessage({ type: 'success', text: 'Profile picture updated.' })
       // refresh preview to use provider URL
       setPreviewUrl(null)
@@ -148,9 +167,13 @@ export default function ProfilePage() {
 
   const handleCancelSelection = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
+    if (croppedImageUrl) URL.revokeObjectURL(croppedImageUrl)
     setPreviewUrl(null)
     setSelectedFile(null)
     setSelectedName(null)
+    setCroppedImageUrl(null)
+    setCrop(undefined)
+    setCompletedCrop(undefined)
     setMessage(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -169,6 +192,138 @@ export default function ProfilePage() {
         alert('Failed to remove profile picture. Please try again.')
       }
     }
+  }
+
+  // Image compression function
+  const compressImage = async (file: File): Promise<File> => {
+    const options = {
+      maxSizeMB: 1, // Maximum size in MB
+      maxWidthOrHeight: 1024, // Maximum width or height
+      useWebWorker: true,
+      quality: 0.8, // Image quality (0-1)
+    }
+
+    try {
+      const compressedFile = await imageCompression(file, options)
+      return compressedFile
+    } catch (error) {
+      console.error('Error compressing image:', error)
+      return file // Return original file if compression fails
+    }
+  }
+
+  // Get cropped image as blob
+  const getCroppedImg = (image: HTMLImageElement, crop: PixelCrop): Promise<Blob | null> => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+
+    if (!ctx) {
+      return Promise.reject(new Error('No 2d context'))
+    }
+
+    const scaleX = image.naturalWidth / image.width
+    const scaleY = image.naturalHeight / image.height
+
+    canvas.width = crop.width
+    canvas.height = crop.height
+
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    )
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob)
+      }, 'image/jpeg', 0.95)
+    })
+  }
+
+  // Handle crop completion
+  const onCropComplete = async (crop: PixelCrop) => {
+    setCompletedCrop(crop)
+
+    if (imageRef && crop.width && crop.height) {
+      try {
+        const croppedBlob = await getCroppedImg(imageRef, crop)
+        if (croppedBlob) {
+          const croppedUrl = URL.createObjectURL(croppedBlob)
+          setCroppedImageUrl(croppedUrl)
+        }
+      } catch (error) {
+        console.error('Error creating cropped image:', error)
+      }
+    }
+  }
+
+  // Handle crop modal close and apply crop
+  const handleApplyCrop = async () => {
+    if (!selectedFile || !croppedImageUrl) return
+
+    setIsCompressing(true)
+    setMessage({ type: 'info', text: 'Compressing image...' })
+
+    try {
+      // Convert cropped image URL to File
+      const response = await fetch(croppedImageUrl)
+      const blob = await response.blob()
+      const croppedFile = new File([blob], selectedFile.name, { type: 'image/jpeg' })
+
+      // Compress the cropped image
+      const compressedFile = await compressImage(croppedFile)
+
+      // Update the selected file with compressed version
+      setSelectedFile(compressedFile)
+      setPreviewUrl(URL.createObjectURL(compressedFile))
+      setMessage({ type: 'success', text: 'Image cropped and compressed successfully!' })
+
+      // Close crop modal
+      setShowCropModal(false)
+      setCroppedImageUrl(null)
+    } catch (error) {
+      console.error('Error processing image:', error)
+      setMessage({ type: 'error', text: 'Failed to process image. Please try again.' })
+    } finally {
+      setIsCompressing(false)
+    }
+  }
+
+  // Handle crop modal cancel
+  const handleCancelCrop = () => {
+    setShowCropModal(false)
+    setCroppedImageUrl(null)
+    setCrop(undefined)
+    setCompletedCrop(undefined)
+  }
+
+  // Initialize crop when image loads
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget
+    setImageRef(e.currentTarget)
+
+    // Create a square crop in the center
+    const crop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 50,
+        },
+        1, // aspect ratio (square)
+        width,
+        height
+      ),
+      width,
+      height
+    )
+
+    setCrop(crop)
   }
 
   return (
@@ -236,15 +391,22 @@ export default function ProfilePage() {
                       {selectedFile && (
                         <div className="flex items-center space-x-2">
                           <button
+                            onClick={() => setShowCropModal(true)}
+                            disabled={isUploading || isCompressing}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isCompressing ? 'Processing...' : 'Crop & Compress'}
+                          </button>
+                          <button
                             onClick={handleConfirmUpload}
-                            disabled={isUploading}
+                            disabled={isUploading || isCompressing}
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {isUploading ? 'Uploading...' : 'Confirm'}
+                            {isUploading ? 'Uploading...' : 'Upload as-is'}
                           </button>
                           <button
                             onClick={handleCancelSelection}
-                            disabled={isUploading}
+                            disabled={isUploading || isCompressing}
                             className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                           >
                             Cancel
@@ -436,6 +598,61 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Crop Modal */}
+      {showCropModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Crop & Compress Image</h3>
+              <div className="mb-4">
+                {previewUrl && (
+                  <ReactCrop
+                    crop={crop}
+                    onChange={setCrop}
+                    onComplete={onCropComplete}
+                    aspect={1}
+                    minWidth={100}
+                    minHeight={100}
+                  >
+                    <img
+                      src={previewUrl}
+                      alt="Crop preview"
+                      onLoad={onImageLoad}
+                      className="max-w-full max-h-96 object-contain"
+                    />
+                  </ReactCrop>
+                )}
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  {completedCrop && (
+                    <span>
+                      Crop size: {Math.round(completedCrop.width)} x {Math.round(completedCrop.height)} pixels
+                    </span>
+                  )}
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleCancelCrop}
+                    className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+                    disabled={isCompressing}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleApplyCrop}
+                    disabled={!completedCrop || isCompressing}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isCompressing ? 'Processing...' : 'Apply Crop & Compress'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
