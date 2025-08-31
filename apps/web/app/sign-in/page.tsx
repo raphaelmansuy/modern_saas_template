@@ -1,18 +1,14 @@
 import { SignIn } from '@clerk/nextjs'
+import { PageLayout } from '../../components/layout/PageLayout'
 
 export default function SignInPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome Back
-          </h2>
-          <p className="text-gray-600">
-            Sign in to your account to continue
-          </p>
-        </div>
-        <div className="bg-white p-8 rounded-lg shadow-md">
+    <PageLayout
+      title="Welcome Back"
+      description="Sign in to your account to continue"
+    >
+      <div className="max-w-md mx-auto">
+        <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
           <SignIn
             path="/sign-in"
             routing="path"
@@ -29,7 +25,7 @@ export default function SignInPage() {
             }}
           />
         </div>
-        <div className="text-center">
+        <div className="text-center mt-6">
           <p className="text-gray-600">
             Don't have an account?{' '}
             <a href="/sign-up" className="text-blue-500 hover:text-blue-600 font-medium">
@@ -38,6 +34,6 @@ export default function SignInPage() {
           </p>
         </div>
       </div>
-    </div>
+    </PageLayout>
   )
 }

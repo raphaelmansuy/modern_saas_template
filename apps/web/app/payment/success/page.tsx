@@ -1,9 +1,18 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircleIcon, DocumentTextIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { PageLayout } from '../../../components/layout/PageLayout'
+import { Button } from '../../../components/ui'
+import { BreadcrumbItem } from '../../../lib/store/navigation'
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Products', href: '/products' },
+  { label: 'Payment Success' }
+]
 
 interface OrderDetails {
   order: {
@@ -34,7 +43,7 @@ interface OrderDetails {
   }
 }
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null)
@@ -42,7 +51,7 @@ export default function PaymentSuccessPage() {
   const [error, setError] = useState<string | null>(null)
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'synced' | 'failed'>('syncing')
 
-  const paymentIntentId = searchParams.get('payment_intent')
+  const paymentIntentId = searchParams?.get('payment_intent')
 
   useEffect(() => {
     if (!paymentIntentId) {
@@ -218,18 +227,26 @@ export default function PaymentSuccessPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+      <PageLayout
+        title="Payment Success"
+        description="Loading your order details..."
+        breadcrumbs={breadcrumbs}
+      >
+        <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your order details...</p>
         </div>
-      </div>
+      </PageLayout>
     )
   }
 
   if (error || !orderDetails) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <PageLayout
+        title="Payment Error"
+        description="Unable to load order details"
+        breadcrumbs={breadcrumbs}
+      >
         <div className="text-center max-w-md mx-auto px-4">
           <div className="text-red-500 mb-4">
             <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -257,15 +274,19 @@ export default function PaymentSuccessPage() {
             </Link>
           </div>
         </div>
-      </div>
+      </PageLayout>
     )
   }
 
   const { order } = orderDetails
 
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white">
-      <div className="max-w-3xl mx-auto px-4 py-12">
+    <PageLayout
+      title="Payment Successful!"
+      description="Thank you for your purchase. Your order has been confirmed."
+      breadcrumbs={breadcrumbs}
+    >
+      <div className="print:bg-white">
         {/* Success Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4 print:hidden">
@@ -421,6 +442,29 @@ export default function PaymentSuccessPage() {
           </p>
         </div>
       </div>
-    </div>
+    </PageLayout>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <PageLayout
+      title="Payment Success"
+      description="Loading your order details..."
+      breadcrumbs={breadcrumbs}
+    >
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading your order details...</p>
+      </div>
+    </PageLayout>
+  )
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <PaymentSuccessContent />
+    </Suspense>
   )
 }

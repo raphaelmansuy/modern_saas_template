@@ -1,45 +1,64 @@
 import Link from 'next/link'
 import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
 import { SignOutWithFeedback } from '../components/SignOutWithFeedback'
+import { PageLayout } from '../components/layout/PageLayout'
+import { Button } from '../components/ui'
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
+    <PageLayout
+      title="Welcome to SaaS Starter"
+      description="A modern SaaS application built with Next.js, Hono, and more."
+    >
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to SaaS Starter</h1>
-        <p className="text-lg mb-8">A modern SaaS application built with Next.js, Hono, and more.</p>
-
         <SignedOut>
-          <SignInButton mode="modal">
-            <button className="bg-blue-500 text-white px-4 py-2 rounded mr-4 hover:bg-blue-600 transition-colors">
-              Sign In
-            </button>
-          </SignInButton>
-          <Link href="/sign-up" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors">
-            Sign Up
-          </Link>
+          <div className="space-y-4">
+            <SignInButton mode="modal">
+              <Button size="lg">
+                Sign In
+              </Button>
+            </SignInButton>
+            <div>
+              <Link href="/sign-up" className="text-blue-600 hover:text-blue-800">
+                Don't have an account? Sign up
+              </Link>
+            </div>
+          </div>
         </SignedOut>
 
         <SignedIn>
-          <div className="flex flex-col gap-4 items-center">
-            <div className="flex gap-4 flex-wrap justify-center">
-              <Link href="/dashboard" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors">
-                Go to Dashboard
+          <div className="space-y-6">
+            <p className="text-lg text-gray-600">
+              Welcome back! You're successfully signed in.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/dashboard">
+                <Button size="lg">
+                  Go to Dashboard
+                </Button>
               </Link>
-              <Link href="/products" className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors">
-                Browse Products
+              <Link href="/products">
+                <Button variant="outline" size="lg">
+                  Browse Products
+                </Button>
               </Link>
-              <Link href="/profile" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
-                My Profile
+              <Link href="/profile">
+                <Button variant="outline" size="lg">
+                  My Profile
+                </Button>
               </Link>
-              <Link href="/admin" className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors">
-                Admin Panel
+              <Link href="/admin">
+                <Button variant="secondary" size="lg">
+                  Admin Panel
+                </Button>
               </Link>
             </div>
-            <SignOutWithFeedback />
+            <div className="pt-4">
+              <SignOutWithFeedback />
+            </div>
           </div>
         </SignedIn>
       </div>
-    </main>
+    </PageLayout>
   )
 }

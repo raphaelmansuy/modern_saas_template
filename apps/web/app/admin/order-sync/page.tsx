@@ -3,6 +3,15 @@
 import { useState, useEffect } from 'react'
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
+import { PageLayout } from '../../../components/layout/PageLayout'
+import { Button } from '../../../components/ui'
+import { BreadcrumbItem } from '../../../lib/store/navigation'
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Admin', href: '/admin' },
+  { label: 'Order Sync' }
+]
 
 interface SyncStats {
   status: string
@@ -83,32 +92,37 @@ export default function OrderSyncPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading order sync dashboard...</p>
+      <PageLayout
+        title="Order Sync Management"
+        description="Loading order sync dashboard..."
+        breadcrumbs={breadcrumbs}
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
-      </div>
+      </PageLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageLayout
+      title="Order Sync Management"
+      description="Monitor and manage Stripe order synchronization"
+      breadcrumbs={breadcrumbs}
+      actions={
+        <div className="flex items-center space-x-4">
+          <UserButton />
+        </div>
+      }
+    >
       <SignedIn>
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Order Sync Management</h1>
-                <p className="mt-2 text-gray-600">Monitor and manage Stripe order synchronization</p>
-              </div>
-              <UserButton />
+        <div className="space-y-8">
+          {/* Order Statistics */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Order Statistics</h2>
             </div>
-          </div>
-
-          <div className="bg-white shadow rounded-lg mb-8">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Order Statistics</h2>
+            <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {syncStats.map((stat, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
@@ -122,9 +136,12 @@ export default function OrderSyncPage() {
             </div>
           </div>
 
-          <div className="bg-white shadow rounded-lg mb-8">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Manual Sync</h2>
+          {/* Manual Sync */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Manual Sync</h2>
+            </div>
+            <div className="p-6">
               <p className="text-gray-600 mb-4">
                 Manually trigger synchronization of pending orders with Stripe.
                 This will process provisional orders and update their status.
@@ -162,9 +179,12 @@ export default function OrderSyncPage() {
             </div>
           </div>
 
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Background Sync</h2>
+          {/* Background Sync */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Background Sync</h2>
+            </div>
+            <div className="p-6">
               <p className="text-gray-600 mb-4">
                 The background sync service runs automatically every 5 minutes to process pending orders.
                 You can also run it manually using the button above.
@@ -197,7 +217,7 @@ export default function OrderSyncPage() {
             </div>
           </div>
 
-          <div className="mt-8">
+          <div className="flex space-x-4">
             <Link href="/admin" className="text-indigo-600 hover:text-indigo-500">
               ← Back to Admin Dashboard
             </Link>
@@ -206,31 +226,22 @@ export default function OrderSyncPage() {
       </SignedIn>
 
       <SignedOut>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="max-w-md w-full space-y-8">
-            <div>
-              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                Admin Access Required
-              </h2>
-              <p className="mt-2 text-center text-sm text-gray-600">
-                Please sign in to access the order sync management
-              </p>
-            </div>
-            <div className="text-center">
-              <SignInButton mode="modal">
-                <button className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                  Sign In
-                </button>
-              </SignInButton>
-            </div>
-            <div className="text-center">
-              <Link href="/" className="text-indigo-600 hover:text-indigo-500">
-                ← Back to Home
-              </Link>
-            </div>
+        <div className="text-center py-12">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Admin Access Required
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Please sign in to access the order sync management
+            </p>
+            <SignInButton mode="modal">
+              <Button>
+                Sign In
+              </Button>
+            </SignInButton>
           </div>
         </div>
       </SignedOut>
-    </div>
+    </PageLayout>
   )
 }

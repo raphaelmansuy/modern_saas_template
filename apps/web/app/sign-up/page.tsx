@@ -1,18 +1,14 @@
 import { SignUp } from '@clerk/nextjs'
+import { PageLayout } from '../../components/layout/PageLayout'
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Create Account
-          </h2>
-          <p className="text-gray-600">
-            Join us and start building amazing things
-          </p>
-        </div>
-        <div className="bg-white p-8 rounded-lg shadow-md">
+    <PageLayout
+      title="Create Account"
+      description="Join us and start building amazing things"
+    >
+      <div className="max-w-md mx-auto">
+        <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
           <SignUp
             path="/sign-up"
             routing="path"
@@ -29,7 +25,7 @@ export default function SignUpPage() {
             }}
           />
         </div>
-        <div className="text-center">
+        <div className="text-center mt-6">
           <p className="text-gray-600">
             Already have an account?{' '}
             <a href="/sign-in" className="text-blue-500 hover:text-blue-600 font-medium">
@@ -38,6 +34,6 @@ export default function SignUpPage() {
           </p>
         </div>
       </div>
-    </div>
+    </PageLayout>
   )
 }

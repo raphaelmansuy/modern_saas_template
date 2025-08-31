@@ -5,8 +5,16 @@ import { useRouter } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { SignedIn, SignedOut, SignInButton, useUser } from '@clerk/nextjs'
+import { PageLayout } from '../../components/layout/PageLayout'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '../../components/ui'
+import { BreadcrumbItem } from '../../lib/store/navigation'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Products' }
+]
 
 interface Product {
   id: number
@@ -77,7 +85,7 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
         setMessage('Payment successful! (Demo mode)')
         // For demo mode, create a mock order record
         const mockPaymentIntentId = `pi_mock_demo_${Date.now()}`
-        
+
         // Create mock order in database for demo purposes
         try {
           await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/create-mock-order`, {
@@ -94,7 +102,7 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
         } catch (error) {
           console.error('Error creating mock order:', error)
         }
-        
+
         // Redirect with mock payment intent ID
         router.push(`/payment/success?payment_intent=${mockPaymentIntentId}`)
         return
@@ -111,7 +119,7 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
         setIsProcessing(false)
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         setMessage('Payment successful!')
-        
+
         // Create provisional order immediately
         try {
           const provisionalResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/create-provisional-order`, {
@@ -126,7 +134,7 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
               customerInfo,
             }),
           })
-          
+
           if (provisionalResponse.ok) {
             const provisionalData = await provisionalResponse.json()
             console.log('Provisional order created:', provisionalData)
@@ -136,7 +144,7 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
         } catch (error) {
           console.error('Error creating provisional order:', error)
         }
-        
+
         // Redirect to success page with payment intent ID
         router.push(`/payment/success?payment_intent=${paymentIntent.id}`)
       }
@@ -169,58 +177,54 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
-        <h2 className="text-xl font-bold mb-4">Purchase {product.name}</h2>
-        <p className="text-gray-600 mb-4">
-          Price: ${(product.price / 100).toFixed(2)} {product.currency.toUpperCase()}
-        </p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <Card className="max-w-md w-full">
+        <CardHeader>
+          <CardTitle>Purchase {product.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600 mb-4">
+            Price: ${(product.price / 100).toFixed(2)} {product.currency.toUpperCase()}
+          </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Card Details
-            </label>
-            <div className="border border-gray-300 rounded-md p-3">
-              <CardElement options={cardElementOptions} />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Card Details
+              </label>
+              <div className="border border-gray-300 rounded-md p-3">
+                <CardElement options={cardElementOptions} />
+              </div>
             </div>
-          </div>
 
-          {message && (
-            <div className={`text-sm ${message.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
-              {message}
+            {message && (
+              <div className={`text-sm ${message.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
+                {message}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                type="button"
+                onClick={onCancel}
+                variant="outline"
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!stripe || isProcessing}
+                loading={isProcessing}
+                className="flex-1"
+              >
+                {isProcessing ? 'Processing...' : 'Pay Now'}
+              </Button>
             </div>
-          )}
-
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
-              disabled={isProcessing}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!stripe || isProcessing}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-            >
-              {isProcessing ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                'Pay Now'
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -265,66 +269,72 @@ export default function ProductsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading products...</div>
-      </div>
+      <PageLayout
+        title="Products"
+        description="Loading our product catalog..."
+        breadcrumbs={breadcrumbs}
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </PageLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Our Products</h1>
-          <p className="text-xl text-gray-600">Choose from our selection of premium products</p>
+    <PageLayout
+      title="Our Products"
+      description="Choose from our selection of premium products"
+      breadcrumbs={breadcrumbs}
+    >
+      <SignedIn>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map((product) => (
+            <Card key={product.id}>
+              <CardHeader>
+                <CardTitle>{product.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {product.description && (
+                  <p className="text-gray-600 mb-4">{product.description}</p>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold text-gray-900">
+                    ${(product.price / 100).toFixed(2)} {product.currency.toUpperCase()}
+                  </span>
+                  <Button onClick={() => handlePurchase(product)}>
+                    Buy Now
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        <SignedIn>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product) => (
-              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{product.name}</h3>
-                  {product.description && (
-                    <p className="text-gray-600 mb-4">{product.description}</p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-gray-900">
-                      ${(product.price / 100).toFixed(2)} {product.currency.toUpperCase()}
-                    </span>
-                    <button
-                      onClick={() => handlePurchase(product)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Buy Now
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {products.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No products available at the moment.</p>
-            </div>
-          )}
-        </SignedIn>
-
-        <SignedOut>
+        {products.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">Please sign in to view and purchase products.</p>
-            <SignInButton mode="modal">
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors">
-                Sign In
-              </button>
-            </SignInButton>
+            <p className="text-gray-500 text-lg">No products available at the moment.</p>
           </div>
-        </SignedOut>
-      </div>
+        )}
+      </SignedIn>
+
+      <SignedOut>
+        <div className="text-center py-12">
+          <Card className="max-w-md mx-auto">
+            <CardContent className="pt-6">
+              <p className="text-gray-600 mb-4">Please sign in to view and purchase products.</p>
+              <SignInButton mode="modal">
+                <Button>
+                  Sign In
+                </Button>
+              </SignInButton>
+            </CardContent>
+          </Card>
+        </div>
+      </SignedOut>
 
       {showCheckout && selectedProduct && (
-        <Elements 
+        <Elements
           stripe={stripePromise}
           options={{
             appearance: {
@@ -339,6 +349,6 @@ export default function ProductsPage() {
           />
         </Elements>
       )}
-    </div>
+    </PageLayout>
   )
 }
