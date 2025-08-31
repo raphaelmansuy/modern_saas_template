@@ -1,220 +1,176 @@
 # SaaS Starter Kit
 
-This is a starter kit for building SaaS applications using the specified tech stack.
+A production-ready SaaS starter kit with authentication, payments, and modern UI components. Built with Next.js 14, Hono.js, PostgreSQL, and Stripe.
 
-## Tech Stack
-
-- Frontend: Next.js with App Router, Tailwind CSS, Zustand
-- Backend: Hono.js
-- Database: PostgreSQL with Drizzle ORM
-- Auth: Clerk
-- Payments: Stripe
-- Email: Resend
-- Monitoring: Sentry
-- Analytics: PostHog
-- Deployment: Vercel
-- Runtime: Bun
-
-## Quick Start
-
-1. **Clone and install dependencies:**
-   ```bash
-   git clone <your-repo>
-   cd saas-starter
-   bun install
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
-   ```
-
-3. **Start development servers:**
-   ```bash
-   # RECOMMENDED: Docker development (includes PostgreSQL)
-   bun run dev:docker
-
-   # Alternative: Local development (requires local PostgreSQL)
-   bun run dev:local
-
-   # Or use Make commands
-   make dev
-   ```
-
-4. **Open your browser:**
-   - Frontend: http://localhost:3000
-   - API: http://localhost:3001
-
-## Development Commands
+## 🚀 Quick Start
 
 ### Docker Development (Recommended)
+
 ```bash
+# Clone and setup
+git clone <your-repo>
+cd saas-starter
+cp .env.example .env
+
 # Start all services with hot reloading
 bun run dev:docker
 
-# Start in background
-bun run dev:docker:background
-
-# Stop services
-bun run docker:down
-
-# View logs
-bun run docker:logs
-bun run docker:logs:web
-bun run docker:logs:api
-bun run docker:logs:db
-
-# Rebuild containers
-bun run docker:rebuild
-
-# Reset database (removes all data)
-bun run db:reset
-```
-
-### Database Management
-```bash
-# Generate migrations
-bun run db:generate
-
-# Push schema changes
-bun run db:push
-
-# Open Drizzle Studio
-bun run db:studio
+# Access your app
+# Frontend: http://localhost:3000
+# API: http://localhost:3001
+# Database: localhost:5432
 ```
 
 ### Local Development
+
 ```bash
-# Start local development (requires PostgreSQL)
+# Requires local PostgreSQL
+bun install
 bun run dev:local
-
-# Install dependencies
-bun run install
-
-# Clean up
-bun run clean
 ```
 
-### Make Commands (Alternative)
-```bash
-# Quick development start
-make dev
+## 🏗️ Tech Stack
 
-# Database operations
-make db-studio
-make db-reset
+- **Frontend**: Next.js 14 (App Router), Tailwind CSS, Zustand
+- **Backend**: Hono.js API with OpenAPI/Swagger docs
+- **Database**: PostgreSQL with Drizzle ORM
+- **Auth**: Clerk authentication
+- **Payments**: Stripe with webhooks
+- **Email**: Resend
+- **Monitoring**: Sentry
+- **Analytics**: PostHog
+- **Deployment**: Vercel
+- **Runtime**: Bun
+- **Monorepo**: Turbo
 
-# Logs
-make logs
-make logs-web
+## 📁 Project Structure
 
-# Cleanup
-make clean
+```text
+├── apps/
+│   ├── web/          # Next.js frontend
+│   └── api/          # Hono.js backend
+├── packages/
+│   ├── db/           # Database schema & queries
+│   ├── ui/           # Shared UI components
+│   └── auth/         # Auth utilities
+└── docker/           # Docker configuration
 ```
 
-## Features
+## 🔧 Key Features
 
-- **Authentication**: Clerk-powered user authentication with protected admin routes
-- **Admin Dashboard**: Protected admin panel at `/admin` with user management, analytics, and settings
-- **User Profile**: Personal profile page at `/profile` showing account information and quick actions
-- **Database**: PostgreSQL with Drizzle ORM for type-safe queries
-- **State Management**: Zustand for client-side state
-- **Styling**: Tailwind CSS with responsive design
-- **Docker Support**: Full containerization with docker-compose
+### Authentication & User Management
 
-## Project Structure
+- Clerk-powered authentication
+- Protected routes and middleware
+- User profiles and account management
+- Admin dashboard access
 
-- `apps/web`: Next.js frontend
-- `apps/api`: Hono.js backend
-- `packages/db`: Drizzle database schema
-- `packages/ui`: Shared UI components (to be added)
-- `packages/auth`: Auth utilities (to be added)
+### Payment Processing
 
-## Development
+- Full Stripe integration
+- Payment intents and webhooks
+- Order management with sync capabilities
+- Invoice and receipt generation
 
-### Prerequisites
-- Node.js 18+ or Bun
-- Docker & Docker Compose (for containerized development)
-- PostgreSQL (if running locally)
+### Database & API
 
-### Environment Setup
-Copy `.env.example` to `.env` and fill in your API keys:
-- Clerk (authentication)
-- Stripe (payments)
-- Resend (email)
-- Sentry (monitoring)
-- PostHog (analytics)
+- Type-safe PostgreSQL queries with Drizzle
+- RESTful API with comprehensive endpoints
+- OpenAPI/Swagger documentation
+- Provisional order handling
 
-### Available Scripts
+### Developer Experience
+
+- Docker-first development
+- Hot reloading across all services
+- TypeScript throughout
+- ESLint and Prettier configured
+
+## 🛠️ Development Commands
+
 ```bash
 # Development
-bun run dev:docker          # Start Docker development (recommended)
+bun run dev:docker          # Start Docker development
 bun run dev:local           # Start local development
-bun run dev                 # Start with Turbo (local)
-
-# Docker management
-bun run docker:up           # Start Docker services
-bun run docker:down         # Stop Docker services
-bun run docker:logs         # View all logs
-bun run docker:rebuild      # Rebuild containers
 
 # Database
-bun run db:generate         # Generate migrations
 bun run db:push             # Push schema changes
 bun run db:studio           # Open Drizzle Studio
-bun run db:reset            # Reset database
+bun run db:seed             # Seed database
+
+# Docker management
+bun run docker:up           # Start services
+bun run docker:down         # Stop services
+bun run docker:logs         # View logs
 
 # Utilities
-bun run install             # Install dependencies
-bun run clean               # Clean up Docker volumes and node_modules
 bun run lint                # Run linting
-bun run test                # Run tests
-bun run build               # Build for production
+bun run build               # Production build
 ```
 
-## Docker Development
+## 🔐 Environment Setup
 
-The project includes Docker support for consistent development environments:
+Copy `.env.example` to `.env` and configure:
 
-```bash
-# Start all services
-docker-compose up --build
+```env
+# Database
+DATABASE_URL="postgresql://user:password@db:5432/saas_db"
 
-# Start in background
-docker-compose up -d --build
+# Auth (Clerk)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
 
-# Stop services
-docker-compose down
+# Payments (Stripe)
+STRIPE_SECRET_KEY="sk_test_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
 
-# View logs
-docker-compose logs -f
+# Email (Resend)
+RESEND_API_KEY="re_..."
+
+# Monitoring (Sentry)
+SENTRY_DSN="https://..."
+
+# Analytics (PostHog)
+NEXT_PUBLIC_POSTHOG_KEY="phc_..."
 ```
 
-## Deployment
+## 📚 API Documentation
+
+- **Swagger UI**: `http://localhost:3001/docs`
+- **OpenAPI Spec**: `http://localhost:3001/doc`
+
+## 🚀 Deployment
 
 ### Vercel (Recommended)
-1. Connect your GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
+
+1. Connect GitHub repository
+2. Set environment variables
 3. Deploy automatically on push
 
 ### Manual Deployment
-```bash
-# Build the application
-bun run build
 
-# Start production server
+```bash
+bun run build
 bun run start
 ```
 
-## Contributing
+## 📖 Available Routes
+
+- `/` - Landing page
+- `/dashboard` - User dashboard
+- `/profile` - User profile management
+- `/products` - Product catalog
+- `/admin` - Admin dashboard
+- `/admin/order-sync` - Order synchronization
+- `/sign-in`, `/sign-up` - Authentication
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+3. Make changes and test
+4. Submit a pull request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License.
+MIT License - see LICENSE file for details.
