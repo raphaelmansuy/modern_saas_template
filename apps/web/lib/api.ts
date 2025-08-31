@@ -9,24 +9,31 @@ const getApiUrl = (): string => {
 export const apiClient = {
   get: async (endpoint: string, options?: RequestInit) => {
     const url = `${getApiUrl()}${endpoint}`
+    const headers = new Headers()
+    if (options?.headers) {
+      for (const [key, value] of Object.entries(options.headers)) {
+        headers.set(key, value as string)
+      }
+    }
     return fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
       ...options,
     })
   },
 
   post: async (endpoint: string, data?: any, options?: RequestInit) => {
     const url = `${getApiUrl()}${endpoint}`
+    const headers = new Headers()
+    headers.set('Content-Type', 'application/json')
+    if (options?.headers) {
+      for (const [key, value] of Object.entries(options.headers)) {
+        headers.set(key, value as string)
+      }
+    }
     return fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     })
@@ -34,12 +41,16 @@ export const apiClient = {
 
   put: async (endpoint: string, data?: any, options?: RequestInit) => {
     const url = `${getApiUrl()}${endpoint}`
+    const headers = new Headers()
+    headers.set('Content-Type', 'application/json')
+    if (options?.headers) {
+      for (const [key, value] of Object.entries(options.headers)) {
+        headers.set(key, value as string)
+      }
+    }
     return fetch(url, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     })
@@ -47,12 +58,15 @@ export const apiClient = {
 
   delete: async (endpoint: string, options?: RequestInit) => {
     const url = `${getApiUrl()}${endpoint}`
+    const headers = new Headers()
+    if (options?.headers) {
+      for (const [key, value] of Object.entries(options.headers)) {
+        headers.set(key, value as string)
+      }
+    }
     return fetch(url, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
       ...options,
     })
   },

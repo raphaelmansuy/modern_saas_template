@@ -30,7 +30,7 @@ const allowedOrigins = process.env.CORS_ORIGINS
 // Add CORS middleware
 app.use('/*', cors({
   origin: allowedOrigins,
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['*'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }))
 
@@ -39,14 +39,8 @@ const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY!
 })
 
-// Profile update schema
-const updateProfileSchema = z.object({
-  firstName: z.string().min(1).max(50).optional(),
-  lastName: z.string().min(1).max(50).optional(),
-})
-
 // Update user profile endpoint
-app.put('/api/user/profile', zValidator('json', updateProfileSchema), async (c) => {
+app.put('/api/user/profile', async (c) => {
   try {
     const authHeader = c.req.header('Authorization')
 
@@ -57,20 +51,45 @@ app.put('/api/user/profile', zValidator('json', updateProfileSchema), async (c) 
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
 
     // Verify the token and get user info
-    const payload = await clerkClient.verifyToken(token)
+    let payload
+    try {
+      payload = await clerkClient.verifyToken(token)
+    } catch (tokenError) {
+      console.error('Token verification failed:', tokenError)
+      return c.json({ error: 'Invalid or expired authentication token' }, 401)
+    }
 
     if (!payload.sub) {
       return c.json({ error: 'Invalid token' }, 401)
     }
 
     const userId = payload.sub
-    const body = c.req.valid('json')
+    const body = await c.req.json()
+
+    // Prepare update data - only include fields that are provided
+    const updateData: any = {}
+    if (body.firstName !== undefined) {
+      updateData.firstName = body.firstName || null
+    }
+    if (body.lastName !== undefined) {
+      updateData.lastName = body.lastName || null
+    }
+
+    // If no fields to update, return success
+    if (Object.keys(updateData).length === 0) {
+      return c.json({
+        success: true,
+        user: {
+          id: payload.sub,
+          firstName: null, // We don't have the current values
+          lastName: null,
+          emailAddresses: [],
+        }
+      })
+    }
 
     // Update user profile using Clerk
-    const updatedUser = await clerkClient.users.updateUser(userId, {
-      firstName: body.firstName,
-      lastName: body.lastName,
-    })
+    const updatedUser = await clerkClient.users.updateUser(userId, updateData)
 
     return c.json({
       success: true,
@@ -83,6 +102,17 @@ app.put('/api/user/profile', zValidator('json', updateProfileSchema), async (c) 
     })
   } catch (error) {
     console.error('Error updating user profile:', error)
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('token')) {
+        return c.json({ error: 'Authentication error' }, 401)
+      }
+      if (error.message.includes('user')) {
+        return c.json({ error: 'User not found' }, 404)
+      }
+    }
+    
     return c.json({ error: 'Failed to update profile' }, 500)
   }
 })

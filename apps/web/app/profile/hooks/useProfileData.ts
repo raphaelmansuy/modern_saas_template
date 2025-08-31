@@ -31,17 +31,32 @@ export const useProfileData = () => {
 
     try {
       const token = await getToken()
-      const response = await apiClient.put('/api/user/profile', {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-      }, {
+      if (!token) {
+        throw new Error('No authentication token available')
+      }
+
+      // Only include fields that have changed
+      const updateData: any = {}
+      const trimmedFirstName = firstName.trim()
+      const trimmedLastName = lastName.trim()
+      
+      if (trimmedFirstName !== originalFirstName) {
+        updateData.firstName = trimmedFirstName
+      }
+      if (trimmedLastName !== originalLastName) {
+        updateData.lastName = trimmedLastName
+      }
+
+      const response = await apiClient.put('/api/user/profile', updateData, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update profile')
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || 'Failed to update profile'
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -50,14 +65,14 @@ export const useProfileData = () => {
       await user!.reload()
 
       // Update original values and exit edit mode
-      setOriginalFirstName(firstName.trim())
-      setOriginalLastName(lastName.trim())
+      setOriginalFirstName(trimmedFirstName)
+      setOriginalLastName(trimmedLastName)
       setIsEditMode(false)
 
       return { success: true, message: 'Profile updated successfully!' }
     } catch (error) {
       console.error('Error updating profile:', error)
-      return { success: false, message: 'Failed to update profile. Please try again.' }
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to update profile. Please try again.' }
     } finally {
       setIsUpdatingProfile(false)
     }
