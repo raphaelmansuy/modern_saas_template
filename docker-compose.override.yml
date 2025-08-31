@@ -3,20 +3,42 @@ services:
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_NODE_ENV=development
+      - DATABASE_URL=postgresql://user:password@db:5432/saas_db
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - NEXT_PUBLIC_CLERK_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
+      - NEXT_PUBLIC_CLERK_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+      - NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL}
+      - NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY}
+      - NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST}
     volumes:
       - ./apps/web:/app
       - /app/node_modules
-      - ./.env:/app/.env
     command: bun run dev
 
   api:
     environment:
       - NODE_ENV=development
+      - DATABASE_URL=postgresql://user:password@db:5432/saas_db
+      - API_URL=${API_URL}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - SENTRY_DSN=${SENTRY_DSN}
     volumes:
-      - ./apps/api:/app
+      - ./apps/api:/app/apps/api
+      - ./packages:/app/packages
+      - ./apps/api/start.sh:/app/start.sh
       - /app/node_modules
-      - ./.env:/app/.env
-    command: bun run dev
+    entrypoint: ["./start.sh"]
 
   db:
     volumes:

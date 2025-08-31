@@ -6,7 +6,7 @@
   "scripts": {
     "generate": "drizzle-kit generate:pg",
     "push": "drizzle-kit push:pg",
-    "seed": "tsx seed.ts"
+    "seed": "bun run seed.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.29.0",
