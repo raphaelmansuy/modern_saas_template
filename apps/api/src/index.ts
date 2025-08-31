@@ -19,7 +19,7 @@ const app = new Hono()
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2023-10-16',
 })
 
 // Get allowed origins from environment variables
@@ -37,6 +37,443 @@ app.use('/*', cors({
 // Initialize Clerk client
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY!
+})
+
+// OpenAPI specification
+const openApiSpec = {
+  openapi: '3.1.0',
+  info: {
+    title: 'SaaS API',
+    version: '1.0.0',
+    description: 'Payment processing and user management API for the SaaS platform'
+  },
+  servers: [
+    {
+      url: process.env.NODE_ENV === 'production'
+        ? 'https://api.yourdomain.com'
+        : 'http://localhost:3001',
+      description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server'
+    }
+  ],
+  paths: {
+    '/': {
+      get: {
+        summary: 'Health check',
+        description: 'API health check endpoint',
+        responses: {
+          '200': {
+            description: 'Successful response',
+            content: {
+              'text/plain': {
+                schema: {
+                  type: 'string',
+                  example: 'Hello from Hono API!'
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/products': {
+      get: {
+        summary: 'Get all products',
+        description: 'Retrieve all available products',
+        responses: {
+          '200': {
+            description: 'List of products',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    products: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'number' },
+                          name: { type: 'string' },
+                          description: { type: 'string', nullable: true },
+                          price: { type: 'number' },
+                          currency: { type: 'string' },
+                          stripeProductId: { type: 'string', nullable: true },
+                          stripePriceId: { type: 'string', nullable: true },
+                          createdAt: { type: 'string', format: 'date-time', nullable: true }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          '500': {
+            description: 'Internal server error',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    error: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/create-payment-intent': {
+      post: {
+        summary: 'Create payment intent',
+        description: 'Create a Stripe payment intent for a product',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  productId: { type: 'number' },
+                  quantity: { type: 'number', minimum: 1, default: 1 },
+                  customerInfo: {
+                    type: 'object',
+                    properties: {
+                      customerId: { type: 'string' },
+                      customerEmail: { type: 'string', format: 'email' },
+                      customerName: { type: 'string' },
+                      customerPhone: { type: 'string' }
+                    }
+                  }
+                },
+                required: ['productId']
+              }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Payment intent created successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    clientSecret: { type: 'string' },
+                    amount: { type: 'number' },
+                    currency: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          '404': {
+            description: 'Product not found'
+          },
+          '500': {
+            description: 'Internal server error'
+          }
+        }
+      }
+    },
+    '/api/orders/{paymentIntentId}': {
+      get: {
+        summary: 'Get order by payment intent ID',
+        description: 'Retrieve order details using the Stripe payment intent ID',
+        parameters: [
+          {
+            name: 'paymentIntentId',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string'
+            }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Order details retrieved successfully'
+          },
+          '202': {
+            description: 'Order is being processed'
+          },
+          '400': {
+            description: 'Payment not completed or invalid status'
+          },
+          '404': {
+            description: 'Order not found'
+          },
+          '500': {
+            description: 'Internal server error'
+          }
+        }
+      }
+    },
+    '/api/webhooks': {
+      post: {
+        summary: 'Stripe webhooks',
+        description: 'Handle Stripe webhook events for payment processing',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                description: 'Stripe webhook payload'
+              }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Webhook processed successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    received: { type: 'boolean' }
+                  }
+                }
+              }
+            }
+          },
+          '400': {
+            description: 'Webhook signature verification failed'
+          }
+        }
+      }
+    },
+    '/api/create-provisional-order': {
+      post: {
+        summary: 'Create provisional order',
+        description: 'Create a provisional order immediately after payment confirmation',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  paymentIntentId: { type: 'string' },
+                  productId: { type: 'number' },
+                  quantity: { type: 'number', minimum: 1, default: 1 },
+                  customerInfo: {
+                    type: 'object',
+                    properties: {
+                      customerEmail: { type: 'string', format: 'email' },
+                      customerName: { type: 'string' },
+                      customerPhone: { type: 'string' }
+                    }
+                  }
+                },
+                required: ['paymentIntentId', 'productId']
+              }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Provisional order created successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    orderId: { type: 'number' },
+                    isProvisional: { type: 'boolean' }
+                  }
+                }
+              }
+            }
+          },
+          '404': {
+            description: 'Product not found'
+          },
+          '500': {
+            description: 'Internal server error'
+          }
+        }
+      }
+    },
+    '/api/admin/sync-orders': {
+      post: {
+        summary: 'Sync orders manually',
+        description: 'Manually trigger order synchronization with Stripe (Admin only)',
+        security: [
+          {
+            bearerAuth: []
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Order sync completed successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    synced: { type: 'number' },
+                    failed: { type: 'number' },
+                    skipped: { type: 'number' }
+                  }
+                }
+              }
+            }
+          },
+          '401': {
+            description: 'Unauthorized - Admin access required'
+          },
+          '500': {
+            description: 'Internal server error'
+          }
+        }
+      }
+    },
+    '/api/admin/sync-stats': {
+      get: {
+        summary: 'Get sync statistics',
+        description: 'Get order synchronization statistics (Admin only)',
+        security: [
+          {
+            bearerAuth: []
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Sync statistics retrieved successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    stats: {
+                      type: 'object',
+                      properties: {
+                        totalOrders: { type: 'number' },
+                        syncedOrders: { type: 'number' },
+                        pendingOrders: { type: 'number' },
+                        failedOrders: { type: 'number' }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          '401': {
+            description: 'Unauthorized - Admin access required'
+          },
+          '500': {
+            description: 'Internal server error'
+          }
+        }
+      }
+    },
+    '/api/invoices/{paymentIntentId}': {
+      get: {
+        summary: 'Get invoice download URL',
+        description: 'Get the download URL for an invoice or receipt by payment intent ID',
+        parameters: [
+          {
+            name: 'paymentIntentId',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string'
+            }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Invoice/receipt information retrieved successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    downloadUrl: { type: 'string', nullable: true },
+                    message: { type: 'string' },
+                    invoiceId: { type: 'string' },
+                    invoiceNumber: { type: 'string' },
+                    chargeId: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          '500': {
+            description: 'Internal server error'
+          }
+        }
+      }
+    }
+  },
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT'
+      }
+    }
+  }
+}
+
+// Serve OpenAPI specification as JSON
+app.get('/doc', (c) => {
+  return c.json(openApiSpec)
+})
+
+// Serve Swagger UI
+app.get('/docs', (c) => {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SwaggerUI" />
+  <title>SaaS API Documentation</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js" crossorigin></script>
+<script>
+  window.onload = () => {
+    window.ui = SwaggerUIBundle({
+      url: '/doc',
+      dom_id: '#swagger-ui',
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIBundle.presets.standalone,
+      ],
+    });
+  };
+</script>
+</body>
+</html>`
+  return c.html(html)
+})
+
+// Health check route
+app.get('/', (c) => {
+  return c.text('Hello from Hono API!')
+})
+
+// Get all products
+app.get('/api/products', async (c) => {
+  try {
+    const allProducts = await db.select().from(products)
+    return c.json({ products: allProducts })
+  } catch (error) {
+    console.error('Error fetching products:', error)
+    return c.json({ error: 'Failed to fetch products' }, 500)
+  }
 })
 
 // Update user profile endpoint
@@ -117,105 +554,11 @@ app.put('/api/user/profile', async (c) => {
   }
 })
 
-// Get all products
-app.get('/api/products', async (c) => {
-  try {
-    const allProducts = await db.select().from(products)
-    return c.json({ products: allProducts })
-  } catch (error) {
-    console.error('Error fetching products:', error)
-    return c.json({ error: 'Failed to fetch products' }, 500)
-  }
-})
-
-// Create mock order for demo purposes
-app.post('/api/create-mock-order', async (c) => {
+// Create payment intent for a product
+app.post('/api/create-payment-intent', async (c) => {
   try {
     const body = await c.req.json()
-    const { productId, paymentIntentId, customerInfo } = body
-    
-    // Get product from database
-    const product = await db.select().from(products).where(eq(products.id, productId)).limit(1)
-    
-    if (product.length === 0) {
-      return c.json({ error: 'Product not found' }, 404)
-    }
-    
-    const selectedProduct = product[0]
-    
-    // Check if order already exists
-    const existingOrder = await db
-      .select()
-      .from(orders)
-      .where(eq(orders.stripePaymentIntentId, paymentIntentId))
-      .limit(1)
-    
-    if (existingOrder.length > 0) {
-      return c.json({ success: true, message: 'Order already exists' })
-    }
-    
-    // Find or create user
-    let userId: number | null = null
-    if (customerInfo?.customerId) {
-      const existingUser = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, customerInfo.customerEmail || ''))
-        .limit(1)
-      
-      if (existingUser.length > 0) {
-        userId = existingUser[0].id
-      } else {
-        // Create new user if doesn't exist
-        const newUser = await db
-          .insert(users)
-          .values({
-            email: customerInfo.customerEmail || '',
-          })
-          .returning()
-        userId = newUser[0].id
-      }
-    }
-    
-    // Create mock order record
-    await db.insert(orders).values({
-      userId,
-      productId,
-      stripePaymentIntentId: paymentIntentId,
-      quantity: 1,
-      amount: selectedProduct.price,
-      currency: selectedProduct.currency || 'usd',
-      status: 'completed',
-      customerEmail: customerInfo?.customerEmail,
-      customerName: customerInfo?.customerName,
-      customerPhone: customerInfo?.customerPhone,
-    })
-    
-    console.log('Mock order created successfully for payment:', paymentIntentId)
-    
-    return c.json({ success: true })
-  } catch (error) {
-    console.error('Error creating mock order:', error)
-    return c.json({ error: 'Failed to create mock order' }, 500)
-  }
-})
-
-// Create payment intent schema
-const createPaymentIntentSchema = z.object({
-  productId: z.number(),
-  quantity: z.number().min(1).default(1),
-  customerInfo: z.object({
-    customerId: z.string(),
-    customerEmail: z.string().email().optional(),
-    customerName: z.string().optional(),
-    customerPhone: z.string().optional(),
-  }).optional(),
-})
-
-// Create payment intent for a product
-app.post('/api/create-payment-intent', zValidator('json', createPaymentIntentSchema), async (c) => {
-  try {
-    const { productId, quantity, customerInfo } = c.req.valid('json')
+    const { productId, quantity = 1, customerInfo } = body
     
     // Get product from database
     const product = await db.select().from(products).where(eq(products.id, productId)).limit(1)
@@ -290,7 +633,7 @@ app.post('/api/create-payment-intent', zValidator('json', createPaymentIntentSch
     return c.json({
       clientSecret: clientSecret,
       amount: amount,
-      currency: selectedProduct.currency,
+      currency: selectedProduct.currency || 'usd',
     })
   } catch (error) {
     console.error('Error creating payment intent:', error)
@@ -452,7 +795,6 @@ app.get('/api/orders/:paymentIntentId', async (c) => {
       console.log('Handling mock payment:', paymentIntentId)
       
       // For mock payments, create a temporary order response
-      // In a real application, you might want to store mock orders differently
       const mockOrder = {
         order: {
           id: Math.floor(Math.random() * 10000),
@@ -548,7 +890,10 @@ app.get('/api/orders/:paymentIntentId', async (c) => {
       order: {
         ...order[0].order,
         product: order[0].product,
-        user: order[0].user,
+        user: order[0].user ? {
+          id: order[0].user.id,
+          email: order[0].user.email
+        } : undefined,
       }
     })
   } catch (error) {
@@ -557,23 +902,10 @@ app.get('/api/orders/:paymentIntentId', async (c) => {
   }
 })
 
-// Create provisional order schema
-const createProvisionalOrderSchema = z.object({
-  paymentIntentId: z.string(),
-  productId: z.number(),
-  quantity: z.number().min(1).default(1),
-  customerInfo: z.object({
-    customerId: z.string().optional(),
-    customerEmail: z.string().email().optional(),
-    customerName: z.string().optional(),
-    customerPhone: z.string().optional(),
-  }).optional(),
-})
-
 // Create provisional order immediately after payment confirmation
-app.post('/api/create-provisional-order', zValidator('json', createProvisionalOrderSchema), async (c) => {
+app.post('/api/create-provisional-order', async (c) => {
   try {
-    const { paymentIntentId, productId, quantity, customerInfo } = c.req.valid('json')
+    const { paymentIntentId, productId, quantity = 1, customerInfo } = await c.req.json()
     
     // Check if provisional order already exists
     const existingOrder = await db
@@ -776,10 +1108,6 @@ app.get('/api/invoices/:paymentIntentId', async (c) => {
       message: 'Failed to retrieve invoice or receipt'
     }, 500)
   }
-})
-
-app.get('/', (c) => {
-  return c.text('Hello from Hono API!')
 })
 
 export default {
