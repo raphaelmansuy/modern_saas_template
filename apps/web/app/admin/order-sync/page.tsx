@@ -22,13 +22,25 @@ export default function OrderSyncPage() {
 
   const fetchSyncStats = async () => {
     try {
+      console.log('Fetching sync stats from frontend...')
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/sync-stats`)
+      
+      console.log('Stats response status:', response.status)
       const data = await response.json()
+      console.log('Stats response data:', data)
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`)
+      }
+      
       if (data.success) {
         setSyncStats(data.stats)
+      } else {
+        throw new Error(data.error || 'Failed to fetch sync stats')
       }
     } catch (error) {
       console.error('Error fetching sync stats:', error)
+      // Don't show error to user for stats, just log it
     } finally {
       setLoading(false)
     }
@@ -39,17 +51,26 @@ export default function OrderSyncPage() {
     setSyncResults(null)
 
     try {
+      console.log('Starting manual sync from frontend...')
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/sync-orders`, {
         method: 'POST',
       })
+      
+      console.log('Response status:', response.status)
       const data = await response.json()
+      console.log('Response data:', data)
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`)
+      }
+      
       setSyncResults(data)
 
       // Refresh stats after sync
       await fetchSyncStats()
     } catch (error) {
       console.error('Error running manual sync:', error)
-      setSyncResults({ error: 'Failed to run sync' })
+      setSyncResults({ error: error instanceof Error ? error.message : 'Failed to run sync' })
     } finally {
       setIsSyncing(false)
     }
