@@ -26,6 +26,12 @@ interface OrderDetails {
       currency: string
     }
   }
+  invoice?: {
+    downloadUrl: string | null
+    invoiceId?: string
+    invoiceNumber?: string
+    message?: string
+  }
 }
 
 export default function PaymentSuccessPage() {
@@ -70,6 +76,10 @@ export default function PaymentSuccessPage() {
             price: 2999,
             currency: 'usd',
           }
+        },
+        invoice: {
+          downloadUrl: null,
+          message: 'Invoice not available for demo payments'
         }
       })
       setSyncStatus('synced')
@@ -102,6 +112,9 @@ export default function PaymentSuccessPage() {
       } else {
         setSyncStatus('synced')
       }
+
+      // Fetch invoice information
+      await fetchInvoiceDetails(paymentIntentId)
     } catch (err) {
       console.error('Error fetching order details:', err)
       setError(err instanceof Error ? err.message : 'Failed to load order details')
@@ -119,6 +132,8 @@ export default function PaymentSuccessPage() {
           setSyncStatus('synced')
           // Update the order details if they changed
           setOrderDetails(data)
+          // Fetch invoice details now that order is confirmed
+          await fetchInvoiceDetails(paymentIntentId)
         } else {
           setSyncStatus('syncing')
         }
@@ -178,6 +193,26 @@ export default function PaymentSuccessPage() {
           Sync Issue
         </div>
       )
+    }
+  }
+
+  const fetchInvoiceDetails = async (paymentIntentId: string) => {
+    try {
+      console.log('Fetching invoice for payment intent:', paymentIntentId)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${paymentIntentId}`)
+      console.log('Invoice API response status:', response.status)
+      
+      if (response.ok) {
+        const invoiceData = await response.json()
+        console.log('Invoice data received:', invoiceData)
+        setOrderDetails(prev => prev ? { ...prev, invoice: invoiceData } : null)
+      } else {
+        const errorData = await response.json()
+        console.log('Invoice API error:', errorData)
+      }
+    } catch (err) {
+      console.error('Error fetching invoice details:', err)
+      // Don't show error for invoice fetch failure, just log it
     }
   }
 
@@ -302,6 +337,12 @@ export default function PaymentSuccessPage() {
                       <dt className="text-sm text-gray-600">Payment ID:</dt>
                       <dd className="text-sm text-gray-900 font-mono">{order.stripePaymentIntentId}</dd>
                     </div>
+                    {orderDetails?.invoice?.invoiceNumber && (
+                      <div className="flex justify-between">
+                        <dt className="text-sm text-gray-600">Invoice:</dt>
+                        <dd className="text-sm text-gray-900 font-mono">{orderDetails.invoice.invoiceNumber}</dd>
+                      </div>
+                    )}
                   </dl>
                 </div>
 
@@ -344,6 +385,18 @@ export default function PaymentSuccessPage() {
             <DocumentTextIcon className="w-4 h-4 mr-2" />
             Print Receipt
           </button>
+
+          {orderDetails?.invoice?.downloadUrl && (
+            <a
+              href={orderDetails.invoice.downloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              <DocumentTextIcon className="w-4 h-4 mr-2" />
+              Download {orderDetails.invoice.invoiceId ? 'Invoice' : 'Receipt'}
+            </a>
+          )}
         </div>
 
         {/* Additional Information */}
@@ -354,6 +407,9 @@ export default function PaymentSuccessPage() {
               <li>• A confirmation email has been sent to your email address</li>
               <li>• Your order is being processed and will be shipped soon</li>
               <li>• You can track your order status in your account dashboard</li>
+              {orderDetails?.invoice?.downloadUrl && (
+                <li>• Download your invoice PDF for your records</li>
+              )}
             </ul>
           </div>
           <p className="text-sm text-gray-600">

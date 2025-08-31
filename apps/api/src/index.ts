@@ -666,6 +666,82 @@ app.get('/api/admin/sync-stats', async (c) => {
   }
 })
 
+// Get invoice download URL by payment intent ID
+app.get('/api/invoices/:paymentIntentId', async (c) => {
+  try {
+    const paymentIntentId = c.req.param('paymentIntentId')
+    
+    // Handle mock payments
+    if (paymentIntentId.startsWith('pi_mock_')) {
+      return c.json({ 
+        downloadUrl: null,
+        message: 'Invoice not available for demo payments'
+      })
+    }
+    
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('sk_test_...')) {
+      return c.json({ 
+        downloadUrl: null,
+        message: 'Invoice service not available in demo mode'
+      })
+    }
+    
+    // Retrieve the payment intent
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+      expand: ['latest_charge']
+    })
+    
+    if (!paymentIntent.latest_charge) {
+      return c.json({ 
+        downloadUrl: null,
+        message: 'No charge found for this payment'
+      })
+    }
+    
+    // Get the charge
+    const charge = paymentIntent.latest_charge as Stripe.Charge
+    
+    // First, try to get the invoice if it exists
+    if (charge.invoice) {
+      try {
+        const invoice = await stripe.invoices.retrieve(charge.invoice as string)
+        
+        if (invoice.hosted_invoice_url) {
+          return c.json({ 
+            downloadUrl: invoice.hosted_invoice_url,
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.number
+          })
+        }
+      } catch (invoiceError) {
+        console.log('Error retrieving invoice:', invoiceError)
+        // Continue to try receipt
+      }
+    }
+    
+    // If no invoice or invoice doesn't have URL, use the charge receipt
+    if (charge.receipt_url) {
+      return c.json({ 
+        downloadUrl: charge.receipt_url,
+        message: 'Receipt (no invoice available)',
+        chargeId: charge.id
+      })
+    }
+    
+    return c.json({ 
+      downloadUrl: null,
+      message: 'No receipt or invoice available for this payment'
+    })
+  } catch (error) {
+    console.error('Error retrieving invoice/receipt:', error)
+    return c.json({ 
+      downloadUrl: null,
+      message: 'Failed to retrieve invoice or receipt'
+    }, 500)
+  }
+})
+
 app.get('/', (c) => {
   return c.text('Hello from Hono API!')
 })
