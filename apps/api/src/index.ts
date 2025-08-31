@@ -234,6 +234,12 @@ app.post('/api/create-payment-intent', zValidator('json', createPaymentIntentSch
         ...(customerInfo?.customerName && {
           description: `Purchase by ${customerInfo.customerName} - ${selectedProduct.name}`,
         }),
+        // Disable automatic payment methods (prevents Link from appearing)
+        automatic_payment_methods: {
+          enabled: false,
+        },
+        // Only allow card payments
+        payment_method_types: ['card'],
       })
       
       // Update metadata with the actual payment intent ID

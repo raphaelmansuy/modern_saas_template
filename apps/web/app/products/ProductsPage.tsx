@@ -159,6 +159,13 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
         color: '#9e2146',
       },
     },
+    // Hide the save payment method checkbox and disable Link
+    hideIcon: false,
+    disableLink: true,
+    wallets: {
+      applePay: 'never',
+      googlePay: 'never',
+    },
   }
 
   return (
@@ -317,7 +324,14 @@ export default function ProductsPage() {
       </div>
 
       {showCheckout && selectedProduct && (
-        <Elements stripe={stripePromise}>
+        <Elements 
+          stripe={stripePromise}
+          options={{
+            appearance: {
+              theme: 'stripe',
+            },
+          }}
+        >
           <CheckoutForm
             product={selectedProduct}
             onSuccess={handlePaymentSuccess}

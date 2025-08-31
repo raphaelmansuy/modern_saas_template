@@ -27,8 +27,8 @@ export const products = pgTable('products', {
 
 export const orders = pgTable('orders', {
   id: serial('id').primaryKey(),
-  userId: serial('user_id').references(() => users.id),
-  productId: serial('product_id').references(() => products.id),
+  userId: integer('user_id').references(() => users.id),
+  productId: integer('product_id').references(() => products.id).notNull(),
   stripePaymentIntentId: text('stripe_payment_intent_id').notNull(),
   quantity: integer('quantity').notNull(),
   amount: integer('amount').notNull(), // Amount in cents
