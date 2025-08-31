@@ -31,6 +31,8 @@ dev:
 	docker-compose up --build
 
 dev-local:
+	@echo "Starting database with Docker..."
+	docker-compose up -d db
 	@echo "Starting local development..."
 	bun run dev
 
