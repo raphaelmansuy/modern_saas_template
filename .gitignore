@@ -11,6 +11,9 @@ node_modules/
 /.next/
 /out/
 
+# Turbo
+.turbo
+
 # Production
 /build
 
