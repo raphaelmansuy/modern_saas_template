@@ -24,3 +24,19 @@ export const products = pgTable('products', {
   stripePriceId: text('stripe_price_id'),
   createdAt: timestamp('created_at').defaultNow(),
 })
+
+export const orders = pgTable('orders', {
+  id: serial('id').primaryKey(),
+  userId: serial('user_id').references(() => users.id),
+  productId: serial('product_id').references(() => products.id),
+  stripePaymentIntentId: text('stripe_payment_intent_id').notNull(),
+  quantity: integer('quantity').notNull(),
+  amount: integer('amount').notNull(), // Amount in cents
+  currency: text('currency').notNull(),
+  status: text('status').notNull(), // 'pending', 'completed', 'failed', 'refunded'
+  customerEmail: text('customer_email'),
+  customerName: text('customer_name'),
+  customerPhone: text('customer_phone'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+})

@@ -16,7 +16,9 @@ services:
       retries: 5
 
   web:
-    build: ./apps/web
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
     ports:
       - "3000:3000"
     depends_on:
@@ -41,7 +43,9 @@ services:
       - /app/node_modules
 
   api:
-    build: ./apps/api
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
     ports:
       - "3001:3001"
     depends_on:
@@ -57,7 +61,8 @@ services:
       - RESEND_API_KEY=${RESEND_API_KEY}
       - SENTRY_DSN=${SENTRY_DSN}
     volumes:
-      - ./apps/api:/app
+      - ./apps/api:/app/apps/api
+      - ./packages:/app/packages
       - /app/node_modules
 
 volumes:

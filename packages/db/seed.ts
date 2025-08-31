@@ -1,9 +1,18 @@
-import { db, products } from './index'
+import { db, products, orders, users } from './index'
 import { sql } from 'drizzle-orm'
 
-async function seedProducts() {
+async function seedDatabase() {
   try {
-    console.log('Creating products table if it doesn\'t exist...')
+    console.log('Creating tables if they don\'t exist...')
+
+    // Create the users table if it doesn't exist
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
 
     // Create the products table if it doesn't exist
     await db.execute(sql`
@@ -16,6 +25,25 @@ async function seedProducts() {
         stripe_product_id TEXT,
         stripe_price_id TEXT,
         created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    // Create the orders table if it doesn't exist
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        product_id INTEGER REFERENCES products(id),
+        stripe_payment_intent_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        amount INTEGER NOT NULL,
+        currency TEXT NOT NULL,
+        status TEXT NOT NULL,
+        customer_email TEXT,
+        customer_name TEXT,
+        customer_phone TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `)
 
@@ -56,10 +84,10 @@ async function seedProducts() {
 
     console.log('Seeding completed successfully!')
   } catch (error) {
-    console.error('Error seeding products:', error)
+    console.error('Error seeding database:', error)
   } finally {
     process.exit(0)
   }
 }
 
-seedProducts()
+seedDatabase()

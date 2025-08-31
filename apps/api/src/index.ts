@@ -6,39 +6,13 @@ import { createClerkClient } from '@clerk/clerk-sdk-node'
 import Stripe from 'stripe'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { pgTable, serial, text, timestamp, integer } from 'drizzle-orm/pg-core'
 import { eq } from 'drizzle-orm'
-
-// Define database schema locally
-const users = pgTable('users', {
-  id: serial('id').primaryKey(),
-  email: text('email').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-})
-
-const subscriptions = pgTable('subscriptions', {
-  id: serial('id').primaryKey(),
-  userId: serial('user_id').references(() => users.id),
-  stripeId: text('stripe_id').notNull(),
-  status: text('status').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-})
-
-const products = pgTable('products', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  price: integer('price').notNull(),
-  currency: text('currency').default('usd'),
-  stripeProductId: text('stripe_product_id'),
-  stripePriceId: text('stripe_price_id'),
-  createdAt: timestamp('created_at').defaultNow(),
-})
+import { users, subscriptions, products, orders } from '../packages/db'
 
 // Database connection
 const connectionString = process.env.DATABASE_URL!
 const client = postgres(connectionString)
-const db = drizzle(client, { schema: { users, subscriptions, products } })
+const db = drizzle(client)
 
 const app = new Hono()
 
@@ -123,20 +97,75 @@ app.get('/api/products', async (c) => {
   }
 })
 
-// Get a single product
-app.get('/api/products/:id', async (c) => {
+// Create mock order for demo purposes
+app.post('/api/create-mock-order', async (c) => {
   try {
-    const productId = parseInt(c.req.param('id'))
+    const body = await c.req.json()
+    const { productId, paymentIntentId, customerInfo } = body
+    
+    // Get product from database
     const product = await db.select().from(products).where(eq(products.id, productId)).limit(1)
     
     if (product.length === 0) {
       return c.json({ error: 'Product not found' }, 404)
     }
     
-    return c.json({ product: product[0] })
+    const selectedProduct = product[0]
+    
+    // Check if order already exists
+    const existingOrder = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.stripePaymentIntentId, paymentIntentId))
+      .limit(1)
+    
+    if (existingOrder.length > 0) {
+      return c.json({ success: true, message: 'Order already exists' })
+    }
+    
+    // Find or create user
+    let userId: number | null = null
+    if (customerInfo?.customerId) {
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, customerInfo.customerEmail || ''))
+        .limit(1)
+      
+      if (existingUser.length > 0) {
+        userId = existingUser[0].id
+      } else {
+        // Create new user if doesn't exist
+        const newUser = await db
+          .insert(users)
+          .values({
+            email: customerInfo.customerEmail || '',
+          })
+          .returning()
+        userId = newUser[0].id
+      }
+    }
+    
+    // Create mock order record
+    await db.insert(orders).values({
+      userId,
+      productId,
+      stripePaymentIntentId: paymentIntentId,
+      quantity: 1,
+      amount: selectedProduct.price,
+      currency: selectedProduct.currency || 'usd',
+      status: 'completed',
+      customerEmail: customerInfo?.customerEmail,
+      customerName: customerInfo?.customerName,
+      customerPhone: customerInfo?.customerPhone,
+    })
+    
+    console.log('Mock order created successfully for payment:', paymentIntentId)
+    
+    return c.json({ success: true })
   } catch (error) {
-    console.error('Error fetching product:', error)
-    return c.json({ error: 'Failed to fetch product' }, 500)
+    console.error('Error creating mock order:', error)
+    return c.json({ error: 'Failed to create mock order' }, 500)
   }
 })
 
@@ -192,7 +221,10 @@ app.post('/api/create-payment-intent', zValidator('json', createPaymentIntentSch
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: selectedProduct.currency || 'usd',
-        metadata,
+        metadata: {
+          ...metadata,
+          paymentIntentId: '', // Will be set after creation
+        },
         // Include customer information if email is available
         ...(customerInfo?.customerEmail && {
           receipt_email: customerInfo.customerEmail,
@@ -202,6 +234,15 @@ app.post('/api/create-payment-intent', zValidator('json', createPaymentIntentSch
           description: `Purchase by ${customerInfo.customerName} - ${selectedProduct.name}`,
         }),
       })
+      
+      // Update metadata with the actual payment intent ID
+      await stripe.paymentIntents.update(paymentIntent.id, {
+        metadata: {
+          ...metadata,
+          paymentIntentId: paymentIntent.id,
+        },
+      })
+      
       clientSecret = paymentIntent.client_secret!
     } else {
       // Mock payment intent for development/demo purposes
@@ -248,22 +289,92 @@ app.post('/api/webhooks', async (c) => {
       const paymentIntent = event.data.object as Stripe.PaymentIntent
       console.log('PaymentIntent was successful!', paymentIntent.id)
       
-      // Extract customer information from metadata
-      const customerInfo = {
-        customerId: paymentIntent.metadata.customerId,
-        customerEmail: paymentIntent.metadata.customerEmail,
-        customerName: paymentIntent.metadata.customerName,
-        customerPhone: paymentIntent.metadata.customerPhone,
-        productId: paymentIntent.metadata.productId,
-        productName: paymentIntent.metadata.productName,
-        quantity: paymentIntent.metadata.quantity,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency,
+      try {
+        // Check if order already exists (idempotency)
+        const existingOrder = await db
+          .select()
+          .from(orders)
+          .where(eq(orders.stripePaymentIntentId, paymentIntent.id))
+          .limit(1)
+        
+        if (existingOrder.length > 0) {
+          console.log('Order already exists for payment:', paymentIntent.id)
+          break
+        }
+        
+        // Extract order information from metadata
+        const productId = parseInt(paymentIntent.metadata.productId)
+        const quantity = parseInt(paymentIntent.metadata.quantity || '1')
+        
+        // Get product details
+        const product = await db
+          .select()
+          .from(products)
+          .where(eq(products.id, productId))
+          .limit(1)
+        
+        if (product.length === 0) {
+          console.error('Product not found for payment:', paymentIntent.id)
+          break
+        }
+        
+        // Find or create user
+        let userId: number | null = null
+        if (paymentIntent.metadata.customerEmail) {
+          const existingUser = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, paymentIntent.metadata.customerEmail))
+            .limit(1)
+          
+          if (existingUser.length > 0) {
+            userId = existingUser[0].id
+          } else {
+            // Create new user if doesn't exist
+            const newUser = await db
+              .insert(users)
+              .values({
+                email: paymentIntent.metadata.customerEmail,
+              })
+              .returning()
+            userId = newUser[0].id
+          }
+        }
+        
+        // Create order record
+        await db.insert(orders).values({
+          userId,
+          productId,
+          stripePaymentIntentId: paymentIntent.id,
+          quantity,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          status: 'completed',
+          customerEmail: paymentIntent.metadata.customerEmail,
+          customerName: paymentIntent.metadata.customerName,
+          customerPhone: paymentIntent.metadata.customerPhone,
+        })
+        
+        console.log('Order created successfully for payment:', paymentIntent.id)
+        
+        // TODO: Send confirmation email to customer
+      } catch (error) {
+        console.error('Error processing successful payment:', error)
       }
+      break
+    case 'payment_intent.payment_failed':
+      const failedPaymentIntent = event.data.object as Stripe.PaymentIntent
+      console.log('PaymentIntent failed:', failedPaymentIntent.id)
       
-      console.log('Customer information:', customerInfo)
-      
-      // TODO: Save order to database, send confirmation email, etc.
+      try {
+        // Update order status if it exists
+        await db
+          .update(orders)
+          .set({ status: 'failed' })
+          .where(eq(orders.stripePaymentIntentId, failedPaymentIntent.id))
+      } catch (error) {
+        console.error('Error updating failed payment:', error)
+      }
       break
     case 'payment_method.attached':
       const paymentMethod = event.data.object as Stripe.PaymentMethod
@@ -274,6 +385,122 @@ app.post('/api/webhooks', async (c) => {
   }
   
   return c.json({ received: true })
+})
+
+// Get order details by payment intent ID
+app.get('/api/orders/:paymentIntentId', async (c) => {
+  try {
+    const paymentIntentId = c.req.param('paymentIntentId')
+    console.log('Fetching order for payment intent:', paymentIntentId)
+    
+    // Handle mock payments
+    if (paymentIntentId.startsWith('pi_mock_')) {
+      console.log('Handling mock payment:', paymentIntentId)
+      
+      // For mock payments, create a temporary order response
+      // In a real application, you might want to store mock orders differently
+      const mockOrder = {
+        order: {
+          id: Math.floor(Math.random() * 10000),
+          stripePaymentIntentId: paymentIntentId,
+          quantity: 1,
+          amount: 2999, // Mock amount
+          currency: 'usd',
+          status: 'completed',
+          customerEmail: 'demo@example.com',
+          customerName: 'Demo User',
+          createdAt: new Date().toISOString(),
+          product: {
+            id: 1,
+            name: 'Demo Product',
+            description: 'This is a demo product for testing purposes',
+            price: 2999,
+            currency: 'usd',
+          }
+        }
+      }
+      
+      return c.json(mockOrder)
+    }
+    
+    // First, check if the order exists
+    const orderExists = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.stripePaymentIntentId, paymentIntentId))
+      .limit(1)
+    
+    console.log('Order exists check:', orderExists.length > 0)
+    
+    if (orderExists.length === 0) {
+      // Order doesn't exist yet - this could be because:
+      // 1. Webhook hasn't processed yet
+      // 2. Payment failed
+      // 3. Invalid payment intent ID
+      
+      // Check if payment intent exists in Stripe (for real payments)
+      if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('sk_test_...')) {
+        try {
+          const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+          
+          if (paymentIntent.status === 'succeeded') {
+            // Payment succeeded but webhook hasn't processed yet
+            return c.json({ 
+              error: 'Order is being processed. Please try again in a few moments.',
+              status: 'processing'
+            }, 202)
+          } else if (paymentIntent.status === 'requires_payment_method' || paymentIntent.status === 'requires_confirmation') {
+            // Payment not completed yet
+            return c.json({ 
+              error: 'Payment not completed yet.',
+              status: 'pending'
+            }, 400)
+          } else {
+            // Payment failed or cancelled
+            return c.json({ 
+              error: 'Payment was not successful.',
+              status: paymentIntent.status
+            }, 400)
+          }
+        } catch (stripeError) {
+          console.error('Error retrieving payment intent from Stripe:', stripeError)
+          return c.json({ error: 'Invalid payment intent ID' }, 404)
+        }
+      } else {
+        // Stripe not configured or in demo mode
+        return c.json({ error: 'Order not found' }, 404)
+      }
+    }
+    
+    const order = await db
+      .select({
+        order: orders,
+        product: products,
+        user: users,
+      })
+      .from(orders)
+      .leftJoin(products, eq(orders.productId, products.id))
+      .leftJoin(users, eq(orders.userId, users.id))
+      .where(eq(orders.stripePaymentIntentId, paymentIntentId))
+      .limit(1)
+    
+    console.log('Order query result:', order.length)
+    
+    if (order.length === 0) {
+      return c.json({ error: 'Order not found' }, 404)
+    }
+    
+    return c.json({ 
+      order: {
+        ...order[0].order,
+        product: order[0].product,
+        user: order[0].user,
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching order:', error)
+    return c.json({ error: 'Failed to fetch order' }, 500)
+  }
 })
 
 app.get('/', (c) => {

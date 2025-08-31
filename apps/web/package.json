@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.31.6",
+    "@heroicons/react": "^2.2.0",
     "@stripe/react-stripe-js": "^2.0.0",
     "@stripe/stripe-js": "^2.0.0",
     "@types/node": "^20",

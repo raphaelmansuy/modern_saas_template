@@ -2,14 +2,18 @@ FROM oven/bun:latest
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy workspace configuration and package files
+COPY package.json bun.lock turbo.json ./
+COPY packages ./packages
+
+# Copy web package files
+COPY apps/web/package.json ./
 
 # Install dependencies
 RUN bun install
 
-# Copy source code
-COPY . .
+# Copy web source code
+COPY apps/web .
 
 # Expose port
 EXPOSE 3000

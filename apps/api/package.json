@@ -9,6 +9,7 @@
   "dependencies": {
     "@clerk/clerk-sdk-node": "^5.1.6",
     "@hono/zod-validator": "^0.1.11",
+    "@saas/db": "workspace:*",
     "@sentry/node": "^7.91.0",
     "drizzle-orm": "^0.29.0",
     "hono": "^3.11.0",

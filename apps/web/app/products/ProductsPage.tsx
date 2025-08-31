@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { SignedIn, SignedOut, SignInButton, useUser } from '@clerk/nextjs'
@@ -27,6 +28,7 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
   const stripe = useStripe()
   const elements = useElements()
   const { user } = useUser()
+  const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -73,7 +75,28 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
         // Handle mock payment for development
         console.log('Mock payment processed successfully')
         setMessage('Payment successful! (Demo mode)')
-        onSuccess()
+        // For demo mode, create a mock order record
+        const mockPaymentIntentId = `pi_mock_demo_${Date.now()}`
+        
+        // Create mock order in database for demo purposes
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/create-mock-order`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              productId: product.id,
+              paymentIntentId: mockPaymentIntentId,
+              customerInfo,
+            }),
+          })
+        } catch (error) {
+          console.error('Error creating mock order:', error)
+        }
+        
+        // Redirect with mock payment intent ID
+        router.push(`/payment/success?payment_intent=${mockPaymentIntentId}`)
         return
       }
 
@@ -88,7 +111,8 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
         setIsProcessing(false)
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         setMessage('Payment successful!')
-        onSuccess()
+        // Redirect to success page with payment intent ID
+        router.push(`/payment/success?payment_intent=${paymentIntent.id}`)
       }
     } catch (error) {
       setMessage('An error occurred. Please try again.')
@@ -139,7 +163,7 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
+              className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
               disabled={isProcessing}
             >
               Cancel
@@ -147,9 +171,19 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
             <button
               type="submit"
               disabled={!stripe || isProcessing}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             >
-              {isProcessing ? 'Processing...' : 'Pay Now'}
+              {isProcessing ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                'Pay Now'
+              )}
             </button>
           </div>
         </form>
@@ -188,8 +222,7 @@ export default function ProductsPage() {
   const handlePaymentSuccess = () => {
     setShowCheckout(false)
     setSelectedProduct(null)
-    // You could show a success message or redirect to a confirmation page
-    alert('Payment successful! Thank you for your purchase.')
+    // Payment success now handled by redirect to success page
   }
 
   const handleCancel = () => {
