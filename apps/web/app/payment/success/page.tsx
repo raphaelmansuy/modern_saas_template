@@ -16,6 +16,8 @@ interface OrderDetails {
     customerEmail: string
     customerName: string
     createdAt: string
+    isProvisional?: boolean
+    provisionalCreatedAt?: string
     product: {
       id: number
       name: string
@@ -32,10 +34,7 @@ export default function PaymentSuccessPage() {
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isPolling, setIsPolling] = useState(false)
-  const [pollingProgress, setPollingProgress] = useState(0)
-  const [pollingAttempts, setPollingAttempts] = useState(0)
-  const pollingRef = useRef(false)
+  const [syncStatus, setSyncStatus] = useState<'syncing' | 'synced' | 'failed'>('syncing')
 
   const paymentIntentId = searchParams.get('payment_intent')
 
@@ -47,15 +46,9 @@ export default function PaymentSuccessPage() {
     }
 
     fetchOrderDetails(paymentIntentId)
-
-    // Cleanup function to stop polling when component unmounts
-    return () => {
-      setIsPolling(false)
-      pollingRef.current = false
-    }
   }, [paymentIntentId])
 
-  const fetchOrderDetails = async (paymentIntentId: string, isRetry = false) => {
+  const fetchOrderDetails = async (paymentIntentId: string) => {
     // Handle mock payments for demo mode
     if (paymentIntentId.startsWith('pi_mock_demo_')) {
       setOrderDetails({
@@ -69,6 +62,7 @@ export default function PaymentSuccessPage() {
           customerEmail: 'demo@example.com',
           customerName: 'Demo User',
           createdAt: new Date().toISOString(),
+          isProvisional: false,
           product: {
             id: 1,
             name: 'Demo Product',
@@ -78,29 +72,13 @@ export default function PaymentSuccessPage() {
           }
         }
       })
+      setSyncStatus('synced')
       setLoading(false)
       return
     }
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${paymentIntentId}`)
-      
-      if (response.status === 202) {
-        // Order is being processed by webhook - start polling if not already polling
-        if (!isPolling && !isRetry) {
-          startPolling(paymentIntentId)
-          return
-        } else if (isPolling) {
-          // Continue polling
-          return
-        } else {
-          // Manual retry failed
-          const data = await response.json()
-          setError(`Order is still being processed. Please wait a moment and try again.`)
-          setLoading(false)
-          return
-        }
-      }
       
       if (!response.ok) {
         const errorData = await response.json()
@@ -115,65 +93,40 @@ export default function PaymentSuccessPage() {
       
       const data = await response.json()
       setOrderDetails(data)
-      setIsPolling(false) // Stop polling if it was active
-      pollingRef.current = false
+      
+      // Check if this is a provisional order
+      if (data.order.isProvisional) {
+        setSyncStatus('syncing')
+        // Optional: Set up a simple check for sync status after a delay
+        setTimeout(() => checkSyncStatus(paymentIntentId), 3000)
+      } else {
+        setSyncStatus('synced')
+      }
     } catch (err) {
       console.error('Error fetching order details:', err)
       setError(err instanceof Error ? err.message : 'Failed to load order details')
     } finally {
-      if (!isPolling) {
-        setLoading(false)
-      }
+      setLoading(false)
     }
   }
 
-  const startPolling = (paymentIntentId: string) => {
-    setIsPolling(true)
-    setLoading(false)
-    setError(null)
-    setPollingAttempts(0)
-    setPollingProgress(0)
-    pollingRef.current = true
-
-    const maxAttempts = 30 // Poll for up to 30 attempts
-    let attempts = 0
-
-    const poll = async () => {
-      if (!pollingRef.current) return // Stop if polling was cancelled
-
-      attempts++
-      setPollingAttempts(attempts)
-      setPollingProgress(Math.min((attempts / maxAttempts) * 100, 100))
-
-      try {
-        await fetchOrderDetails(paymentIntentId, true)
-        
-        if (orderDetails) {
-          // Order found, stop polling
-          setIsPolling(false)
-          pollingRef.current = false
-          return
-        }
-      } catch (err) {
-        console.error('Polling error:', err)
-      }
-
-      if (attempts < maxAttempts && !orderDetails && pollingRef.current) {
-        // Exponential backoff: start at 1s, increase gradually up to 3s
-        const delay = Math.min(1000 + (attempts * 50), 3000)
-        setTimeout(poll, delay)
-      } else {
-        // Polling timed out or was cancelled
-        setIsPolling(false)
-        pollingRef.current = false
-        if (!orderDetails) {
-          setError('Order processing is taking longer than expected. Please try refreshing the page or contact support if the issue persists.')
+  const checkSyncStatus = async (paymentIntentId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${paymentIntentId}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (!data.order.isProvisional) {
+          setSyncStatus('synced')
+          // Update the order details if they changed
+          setOrderDetails(data)
+        } else {
+          setSyncStatus('syncing')
         }
       }
+    } catch (err) {
+      console.error('Error checking sync status:', err)
+      setSyncStatus('failed')
     }
-
-    // Start polling
-    setTimeout(poll, 1000)
   }
 
   const handleManualRetry = () => {
@@ -181,8 +134,6 @@ export default function PaymentSuccessPage() {
     
     setError(null)
     setLoading(true)
-    setIsPolling(false)
-    pollingRef.current = false
     fetchOrderDetails(paymentIntentId)
   }
 
@@ -203,50 +154,39 @@ export default function PaymentSuccessPage() {
     }).format(amount / 100)
   }
 
+  const SyncStatusIndicator = () => {
+    if (syncStatus === 'synced') {
+      return (
+        <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+          <CheckCircleIcon className="w-4 h-4 mr-1" />
+          Order Confirmed
+        </div>
+      )
+    } else if (syncStatus === 'syncing') {
+      return (
+        <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600 mr-1"></div>
+          Confirming Order...
+        </div>
+      )
+    } else {
+      return (
+        <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-100 text-red-800">
+          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          Sync Issue
+        </div>
+      )
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your order details...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (isPolling) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Processing Your Order</h1>
-          <p className="text-gray-600 mb-4">
-            We're waiting for your payment confirmation. This usually takes just a few seconds...
-          </p>
-          
-          {/* Progress bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${pollingProgress}%` }}
-            ></div>
-          </div>
-          
-          <p className="text-sm text-gray-500 mb-6">
-            Attempt {pollingAttempts} of 30 • Please don't close this page
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              onClick={handleManualRetry}
-              className="inline-flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Stop Waiting & Try Now
-            </button>
-          </div>
         </div>
       </div>
     )
@@ -307,8 +247,16 @@ export default function PaymentSuccessPage() {
         {/* Order Details Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6 print:shadow-none print:border-0">
           <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+              <SyncStatusIndicator />
+            </div>
             <p className="text-sm text-gray-600">Order #{order.id}</p>
+            {order.isProvisional && (
+              <p className="text-xs text-yellow-600 mt-1">
+                Provisional order created {order.provisionalCreatedAt ? formatDate(order.provisionalCreatedAt) : 'recently'}
+              </p>
+            )}
           </div>
 
           <div className="px-6 py-6">

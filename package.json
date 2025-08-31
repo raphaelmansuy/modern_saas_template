@@ -24,6 +24,7 @@
     "db:seed": "cd packages/db && bun run seed",
     "db:studio": "cd packages/db && drizzle-kit studio",
     "db:reset": "docker-compose down -v && docker-compose up -d db",
+    "sync-orders": "cd apps/api && bun run sync-orders",
     "clean": "docker-compose down -v && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "install-bun": "bun install",
     "setup": "./setup.sh",

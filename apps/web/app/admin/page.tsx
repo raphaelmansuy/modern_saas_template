@@ -39,6 +39,14 @@ export default function AdminPage() {
                     Configure
                   </Link>
                 </div>
+
+                <div className="bg-orange-50 p-6 rounded-lg">
+                  <h3 className="text-lg font-medium text-orange-900 mb-2">Order Sync</h3>
+                  <p className="text-orange-700">Manage Stripe order synchronization</p>
+                  <Link href="/admin/order-sync" className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-orange-700 bg-orange-100 hover:bg-orange-200">
+                    Manage Sync
+                  </Link>
+                </div>
               </div>
 
               <div className="mt-8">

@@ -111,6 +111,32 @@ function CheckoutForm({ product, onSuccess, onCancel }: CheckoutFormProps) {
         setIsProcessing(false)
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         setMessage('Payment successful!')
+        
+        // Create provisional order immediately
+        try {
+          const provisionalResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/create-provisional-order`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              paymentIntentId: paymentIntent.id,
+              productId: product.id,
+              quantity: 1,
+              customerInfo,
+            }),
+          })
+          
+          if (provisionalResponse.ok) {
+            const provisionalData = await provisionalResponse.json()
+            console.log('Provisional order created:', provisionalData)
+          } else {
+            console.error('Failed to create provisional order')
+          }
+        } catch (error) {
+          console.error('Error creating provisional order:', error)
+        }
+        
         // Redirect to success page with payment intent ID
         router.push(`/payment/success?payment_intent=${paymentIntent.id}`)
       }

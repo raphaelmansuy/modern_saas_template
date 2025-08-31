@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, decimal } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, timestamp, integer, decimal, boolean } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -33,10 +33,16 @@ export const orders = pgTable('orders', {
   quantity: integer('quantity').notNull(),
   amount: integer('amount').notNull(), // Amount in cents
   currency: text('currency').notNull(),
-  status: text('status').notNull(), // 'pending', 'completed', 'failed', 'refunded'
+  status: text('status').notNull(), // 'pending', 'processing', 'completed', 'failed', 'refunded'
   customerEmail: text('customer_email'),
   customerName: text('customer_name'),
   customerPhone: text('customer_phone'),
+  // Provisional order fields
+  isProvisional: boolean('is_provisional').default(false),
+  provisionalCreatedAt: timestamp('provisional_created_at'),
+  // Sync tracking fields
+  syncAttempts: integer('sync_attempts').default(0),
+  lastSyncAttempt: timestamp('last_sync_attempt'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 })

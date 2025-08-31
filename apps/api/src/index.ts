@@ -7,7 +7,8 @@ import Stripe from 'stripe'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { eq } from 'drizzle-orm'
-import { users, subscriptions, products, orders } from '../packages/db'
+import { users, subscriptions, products, orders } from '@saas/db'
+import { StripeOrderSyncService } from './scripts/sync-orders'
 
 // Database connection
 const connectionString = process.env.DATABASE_URL!
@@ -290,7 +291,7 @@ app.post('/api/webhooks', async (c) => {
       console.log('PaymentIntent was successful!', paymentIntent.id)
       
       try {
-        // Check if order already exists (idempotency)
+        // Check if order already exists (both provisional and confirmed)
         const existingOrder = await db
           .select()
           .from(orders)
@@ -298,9 +299,28 @@ app.post('/api/webhooks', async (c) => {
           .limit(1)
         
         if (existingOrder.length > 0) {
-          console.log('Order already exists for payment:', paymentIntent.id)
+          const order = existingOrder[0]
+          
+          if (order.isProvisional) {
+            // Update provisional order to confirmed
+            await db
+              .update(orders)
+              .set({
+                status: 'completed',
+                isProvisional: false,
+                updatedAt: new Date()
+              })
+              .where(eq(orders.id, order.id))
+            
+            console.log('Provisional order confirmed for payment:', paymentIntent.id)
+          } else {
+            console.log('Order already exists and is confirmed for payment:', paymentIntent.id)
+          }
           break
         }
+        
+        // No existing order found - create new order (fallback for missed provisional creation)
+        console.log('No existing order found, creating new order for payment:', paymentIntent.id)
         
         // Extract order information from metadata
         const productId = parseInt(paymentIntent.metadata.productId)
@@ -356,8 +376,6 @@ app.post('/api/webhooks', async (c) => {
         })
         
         console.log('Order created successfully for payment:', paymentIntent.id)
-        
-        // TODO: Send confirmation email to customer
       } catch (error) {
         console.error('Error processing successful payment:', error)
       }
@@ -500,6 +518,151 @@ app.get('/api/orders/:paymentIntentId', async (c) => {
   } catch (error) {
     console.error('Error fetching order:', error)
     return c.json({ error: 'Failed to fetch order' }, 500)
+  }
+})
+
+// Create provisional order schema
+const createProvisionalOrderSchema = z.object({
+  paymentIntentId: z.string(),
+  productId: z.number(),
+  quantity: z.number().min(1).default(1),
+  customerInfo: z.object({
+    customerId: z.string().optional(),
+    customerEmail: z.string().email().optional(),
+    customerName: z.string().optional(),
+    customerPhone: z.string().optional(),
+  }).optional(),
+})
+
+// Create provisional order immediately after payment confirmation
+app.post('/api/create-provisional-order', zValidator('json', createProvisionalOrderSchema), async (c) => {
+  try {
+    const { paymentIntentId, productId, quantity, customerInfo } = c.req.valid('json')
+    
+    // Check if provisional order already exists
+    const existingOrder = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.stripePaymentIntentId, paymentIntentId))
+      .limit(1)
+    
+    if (existingOrder.length > 0) {
+      return c.json({ 
+        success: true, 
+        message: 'Order already exists',
+        orderId: existingOrder[0].id,
+        isProvisional: existingOrder[0].isProvisional
+      })
+    }
+    
+    // Get product details
+    const product = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, productId))
+      .limit(1)
+    
+    if (product.length === 0) {
+      return c.json({ error: 'Product not found' }, 404)
+    }
+    
+    const selectedProduct = product[0]
+    
+    // Find or create user
+    let userId: number | null = null
+    if (customerInfo?.customerEmail) {
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, customerInfo.customerEmail))
+        .limit(1)
+      
+      if (existingUser.length > 0) {
+        userId = existingUser[0].id
+      } else {
+        // Create new user if doesn't exist
+        const newUser = await db
+          .insert(users)
+          .values({
+            email: customerInfo.customerEmail,
+          })
+          .returning()
+        userId = newUser[0].id
+      }
+    }
+    
+    // Create provisional order
+    const provisionalOrder = await db
+      .insert(orders)
+      .values({
+        userId,
+        productId,
+        stripePaymentIntentId: paymentIntentId,
+        quantity,
+        amount: selectedProduct.price * quantity,
+        currency: selectedProduct.currency || 'usd',
+        status: 'processing', // New status for provisional orders
+        customerEmail: customerInfo?.customerEmail,
+        customerName: customerInfo?.customerName,
+        customerPhone: customerInfo?.customerPhone,
+        isProvisional: true,
+        provisionalCreatedAt: new Date(),
+        syncAttempts: 0,
+      })
+      .returning()
+    
+    console.log('Provisional order created successfully for payment:', paymentIntentId)
+    
+    return c.json({ 
+      success: true,
+      orderId: provisionalOrder[0].id,
+      isProvisional: true
+    })
+  } catch (error) {
+    console.error('Error creating provisional order:', error)
+    return c.json({ error: 'Failed to create provisional order' }, 500)
+  }
+})
+
+// Admin endpoint for manual order sync
+app.post('/api/admin/sync-orders', async (c) => {
+  try {
+    console.log('Starting manual order sync...')
+    // TODO: Add authentication check for admin users
+    const syncService = new StripeOrderSyncService()
+    const results = await syncService.syncPendingOrders()
+    console.log('Manual sync completed:', results)
+
+    return c.json({
+      success: true,
+      synced: results.synced,
+      failed: results.failed,
+      skipped: results.skipped
+    })
+  } catch (error) {
+    console.error('Error in manual sync:', error)
+    console.error('Full error details:', error)
+    return c.json({ error: 'Failed to sync orders' }, 500)
+  }
+})
+
+// Admin endpoint to get sync statistics
+app.get('/api/admin/sync-stats', async (c) => {
+  try {
+    console.log('Getting sync statistics...')
+    // TODO: Add authentication check for admin users
+    const syncService = new StripeOrderSyncService()
+    const stats = await syncService.getSyncStats()
+    console.log('Sync stats retrieved:', stats)
+
+    return c.json({
+      success: true,
+      stats
+    })
+  } catch (error) {
+    console.error('Error getting sync stats:', error)
+    console.error('Full error details:', error)
+    return c.json({ error: 'Failed to get sync statistics' }, 500)
   }
 })
 
