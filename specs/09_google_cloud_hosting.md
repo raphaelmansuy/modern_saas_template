@@ -116,6 +116,19 @@ This analysis covers:
 - Cost comparisons showing 96% potential savings vs Sentry Business plan
 - Migration strategies and implementation code for Next.js/Hono.js integration
 
+## Analytics Service Alternatives
+
+For detailed analysis of analytics service alternatives to PostHog, including cost comparisons and migration strategies, see the dedicated document: **[12_posthog_alternative.md](12_posthog_alternative.md)**
+
+This analysis covers:
+
+- Google Analytics 4 (free unlimited event tracking)
+- Firebase Analytics (free mobile app analytics)
+- Google Analytics 360 (enterprise analytics)
+- BigQuery Analytics (advanced SQL-based analytics)
+- Cost comparisons showing 100% potential savings vs PostHog Scale plan
+- Migration strategies and implementation code for Next.js/Hono.js integration
+
 ### Service Configuration
 
 #### Cloud Run Services
@@ -563,6 +576,7 @@ gcloud sql users create saas_user \
 #### 5. Build and Deploy Containers
 
 **Build API Container:**
+
 ```bash
 cd apps/api
 docker build -t us-central1-docker.pkg.dev/your-project/containers/saas-api:latest .
@@ -570,6 +584,7 @@ docker push us-central1-docker.pkg.dev/your-project/containers/saas-api:latest
 ```
 
 **Build Frontend Container:**
+
 ```bash
 cd apps/web
 docker build -t us-central1-docker.pkg.dev/your-project/containers/saas-web:latest .
@@ -579,6 +594,7 @@ docker push us-central1-docker.pkg.dev/your-project/containers/saas-web:latest
 #### 6. Deploy to Cloud Run
 
 **Deploy API Service:**
+
 ```bash
 gcloud run deploy saas-api \
   --image=us-central1-docker.pkg.dev/your-project/containers/saas-api:latest \
@@ -591,6 +607,7 @@ gcloud run deploy saas-api \
 ```
 
 **Deploy Frontend Service:**
+
 ```bash
 gcloud run deploy saas-web \
   --image=us-central1-docker.pkg.dev/your-project/containers/saas-web:latest \
@@ -616,38 +633,6 @@ steps:
     args: ['run', 'deploy', 'saas-api', '--image=us-central1-docker.pkg.dev/$PROJECT_ID/containers/saas-api', '--region=us-central1']
 ```
 
-### Migration from Local Development
-
-### Database Migration
-
-1. Export local database schema and data
-2. Import to Cloud SQL instance
-3. Update connection strings in environment variables
-4. Test database connectivity
-
-### Environment Variables Update
-
-```env
-# Update these for production
-DATABASE_URL=postgresql://saas_user:password@10.0.0.3/saas_db
-NEXT_PUBLIC_API_URL=https://saas-api-[hash]-uc.a.run.app
-```
-
-### CI/CD Pipeline Setup (Optional)
-
-#### Cloud Build Configuration
-
-```yaml
-# cloudbuild.yaml
-steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/containers/saas-api', './apps/api']
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/containers/saas-api']
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args: ['run', 'deploy', 'saas-api', '--image=us-central1-docker.pkg.dev/$PROJECT_ID/containers/saas-api', '--region=us-central1']
-```
-
 ## Migration from Local Development
 
 ### Database Migration
@@ -667,27 +652,6 @@ NEXT_PUBLIC_API_URL=https://saas-api-[hash]-uc.a.run.app
 
 ### Domain Configuration
 
-1. Purchase domain through Google Domains or preferred registrar
-2. Configure Cloud DNS
-3. Set up SSL certificates (automatic with Cloud Run)
-4. Configure custom domain in Cloud Run
-
-## Migration from Local Development
-
-### Database Migration
-1. Export local database schema and data
-2. Import to Cloud SQL instance
-3. Update connection strings in environment variables
-4. Test database connectivity
-
-### Environment Variables Update
-```env
-# Update these for production
-DATABASE_URL=postgresql://saas_user:password@10.0.0.3/saas_db
-NEXT_PUBLIC_API_URL=https://saas-api-[hash]-uc.a.run.app
-```
-
-### Domain Configuration
 1. Purchase domain through Google Domains or preferred registrar
 2. Configure Cloud DNS
 3. Set up SSL certificates (automatic with Cloud Run)
@@ -698,6 +662,7 @@ NEXT_PUBLIC_API_URL=https://saas-api-[hash]-uc.a.run.app
 Google Cloud Run provides **automatic SSL certificate provisioning** for custom domains. This section explains how to configure SSL for domains purchased from external providers like Gandi, Namecheap, or GoDaddy.
 
 ### Prerequisites
+
 - Domain purchased from external registrar (e.g., Gandi)
 - Google Cloud project with billing enabled
 - Cloud Run services deployed
@@ -731,9 +696,14 @@ gcloud run domain-mappings describe \
 ```
 
 This command will output something like:
+
 ```
+This command will output something like:
+
+```text
 TXT Record: google-site-verification=abc123def456
 CNAME Record: ghs.googlehosted.com
+```
 ```
 
 #### Step 3: Configure DNS Records at Your Registrar
@@ -754,6 +724,7 @@ CNAME Record: ghs.googlehosted.com
 | CNAME | www | ghs.googlehosted.com | 10800 |
 
 **For API subdomain (if using):**
+
 | Type | Name | Value | TTL |
 |------|------|-------|-----|
 | CNAME | api | ghs.googlehosted.com | 10800 |
@@ -761,12 +732,14 @@ CNAME Record: ghs.googlehosted.com
 #### Step 4: SSL Certificate Provisioning
 
 **Automatic SSL (Recommended):**
+
 - Google Cloud Run automatically provisions SSL certificates
 - Certificates are from Let's Encrypt (free)
 - Automatic renewal handled by Google
 - No additional configuration required
 
 **Custom SSL Certificate (Optional):**
+
 If you prefer to use your own certificate:
 
 ```bash
@@ -797,6 +770,7 @@ openssl s_client -connect yourdomain.com:443 -servername yourdomain.com
 ### DNS Configuration Examples
 
 #### For Root Domain (yourdomain.com)
+
 ```
 Type: CNAME
 Name: @
@@ -805,6 +779,7 @@ TTL: 10800 (3 hours)
 ```
 
 #### For WWW Subdomain (www.yourdomain.com)
+
 ```
 Type: CNAME
 Name: www
@@ -813,6 +788,7 @@ TTL: 10800 (3 hours)
 ```
 
 #### For API Subdomain (api.yourdomain.com)
+
 ```
 Type: CNAME
 Name: api
@@ -823,31 +799,39 @@ TTL: 10800 (3 hours)
 ### Troubleshooting SSL Issues
 
 #### Issue: SSL Certificate Not Provisioning
+
 **Symptoms:** HTTPS not working, browser shows "Not Secure"
 
 **Solutions:**
+
 1. **Wait for DNS propagation** (can take 24-48 hours)
 2. **Verify DNS records** are correctly configured
 3. **Check domain mapping status:**
+
    ```bash
    gcloud run domain-mappings describe --domain=yourdomain.com
    ```
 
 #### Issue: Mixed Content Warnings
+
 **Symptoms:** Browser shows mixed HTTP/HTTPS content
 
 **Solutions:**
+
 1. **Update all internal links** to use HTTPS
 2. **Configure Content Security Policy** headers
 3. **Use protocol-relative URLs** or HTTPS-only URLs
 
 #### Issue: SSL Certificate Expired
+
 **Symptoms:** Browser shows certificate expired
 
 **Solutions:**
+
 - **Automatic certificates:** Google handles renewal automatically
 - **Custom certificates:** Upload new certificate before expiration
 - **Check certificate status:**
+
   ```bash
   gcloud compute ssl-certificates list
   ```
