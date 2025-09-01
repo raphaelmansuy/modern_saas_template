@@ -1,6 +1,7 @@
 import { useUser } from '@clerk/nextjs'
 import { MessageDisplay } from './MessageDisplay'
 import { UploadProgress } from './UploadProgress'
+import React from 'react'
 
 type UserType = ReturnType<typeof useUser>['user']
 
@@ -59,26 +60,36 @@ export const ProfileOverview = ({
   onRemovePicture,
   onCropClick
 }: ProfileOverviewProps) => {
+  // Detect if device is mobile for adaptive UI
+  const [isMobile, setIsMobile] = React.useState(false)
+  
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   return (
-    <div className="lg:col-span-1">
-      <div className="bg-gray-50 rounded-lg p-6">
-        <div className="flex flex-col items-center space-y-4">
+    <div className="2xl:col-span-1 order-1 2xl:order-1">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
+        <div className="flex flex-col items-center space-y-3 md:space-y-4">
           <div className="relative">
             {/* Profile Picture Display */}
             {previewUrl ? (
               <img
                 src={previewUrl}
                 alt="Profile preview"
-                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-4 border-white shadow-lg"
               />
             ) : user!.imageUrl ? (
               <img
                 src={user!.imageUrl}
                 alt="Current profile picture"
-                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-4 border-white shadow-lg"
               />
             ) : (
-              <div className="w-24 h-24 bg-indigo-500 rounded-full flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow-lg">
+              <div className="w-20 h-20 md:w-24 md:h-24 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xl md:text-2xl font-bold border-4 border-white shadow-lg">
                 {user!.firstName?.[0] || user!.emailAddresses[0]?.emailAddress?.[0]?.toUpperCase() || 'U'}
               </div>
             )}
@@ -93,14 +104,10 @@ export const ProfileOverview = ({
             />
           </div>
 
-          {/* Enhanced Upload Area with Drag & Drop */}
+          {/* Enhanced Upload Area with Mobile Optimization */}
           <div
             className={`w-full p-4 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
-              isDragOver
-                ? 'border-indigo-500 bg-indigo-50'
-                : selectedFile
-                  ? 'border-green-300 bg-green-50'
-                  : 'border-gray-300 hover:border-gray-400'
+              isDragOver && !isMobile ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-gray-400'
             }`}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
@@ -118,7 +125,7 @@ export const ProfileOverview = ({
           >
             <div className="text-center">
               <svg
-                className={`mx-auto h-12 w-12 ${isDragOver ? 'text-indigo-500' : 'text-gray-400'}`}
+                className={`mx-auto h-10 w-10 md:h-12 md:w-12 ${isDragOver ? 'text-indigo-500' : 'text-gray-400'}`}
                 stroke="currentColor"
                 fill="none"
                 viewBox="0 0 48 48"
@@ -133,7 +140,7 @@ export const ProfileOverview = ({
               </svg>
               <div className="mt-2">
                 <p className={`text-sm font-medium ${isDragOver ? 'text-indigo-600' : 'text-gray-900'}`}>
-                  {isDragOver ? 'Drop your image here' : 'Click to upload or drag and drop'}
+                  {isMobile ? 'Tap to select image' : isDragOver ? 'Drop your image here' : 'Click to upload or drag and drop'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   PNG, JPG, GIF, WebP up to 50MB
@@ -184,14 +191,14 @@ export const ProfileOverview = ({
           <div className="flex flex-col items-center space-y-2 w-full">
             {/* Confirm / Cancel actions when a file is selected */}
             {selectedFile && (
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full">
                 <button
                   onClick={onCropClick}
                   disabled={isUploading || isCompressing || !isImageValid}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none px-3 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Crop and compress image"
                 >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                   Crop & Compress
@@ -199,7 +206,7 @@ export const ProfileOverview = ({
                 <button
                   onClick={onConfirmUpload}
                   disabled={isUploading || isCompressing || !isImageValid || !isOnline}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none px-3 py-2 text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Upload image as-is"
                 >
                   {isUploading ? 'Uploading...' : 'Upload as-is'}
@@ -207,7 +214,7 @@ export const ProfileOverview = ({
                 <button
                   onClick={onCancelSelection}
                   disabled={isUploading || isCompressing}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none px-3 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Cancel selection"
                 >
                   Cancel
@@ -231,11 +238,14 @@ export const ProfileOverview = ({
 
             {/* Connection Status */}
             {!isOnline && (
-              <div className="flex items-center text-xs text-red-600">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center text-xs text-red-600 bg-red-50 border border-red-200 rounded-md p-2 w-full">
+                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
-                Offline - Upload disabled
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium">You're offline</p>
+                  <p className="text-red-500">Image upload is disabled. Your changes will be saved when connection is restored.</p>
+                </div>
               </div>
             )}
 

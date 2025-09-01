@@ -30,7 +30,7 @@ export const PersonalInformation = ({
   onSubmit
 }: PersonalInformationProps) => {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
+    <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
         {!isEditMode ? (
@@ -76,46 +76,69 @@ export const PersonalInformation = ({
         </div>
       ) : (
         // Edit Mode
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4" role="form" aria-labelledby="personal-info-heading">
+          <h3 id="personal-info-heading" className="sr-only">Personal Information</h3>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">First Name</label>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                First Name
+              </label>
               <input
+                id="firstName"
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 placeholder="Enter first name"
+                aria-describedby="firstName-help"
+                aria-invalid={!firstName.trim() && hasChanges}
               />
+              <div id="firstName-help" className="sr-only">Enter your first name as it appears on official documents</div>
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700">Last Name</label>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                Last Name
+              </label>
               <input
+                id="lastName"
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 placeholder="Enter last name"
+                aria-describedby="lastName-help"
+                aria-invalid={!lastName.trim() && hasChanges}
               />
+              <div id="lastName-help" className="sr-only">Enter your last name as it appears on official documents</div>
             </div>
+            
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700">Email Address</label>
               <p className="mt-1 text-sm text-gray-900">{user!.emailAddresses[0]?.emailAddress}</p>
               <p className="mt-1 text-xs text-gray-500">Email cannot be changed here. Contact support if needed.</p>
             </div>
           </div>
-          <div className="flex justify-end space-x-3">
+          
+          {/* Status announcements for screen readers */}
+          <div aria-live="polite" aria-atomic="true" className="sr-only">
+            {isUpdatingProfile && "Updating your profile information..."}
+            {hasChanges && !isUpdatingProfile && "You have unsaved changes"}
+          </div>
+          
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               type="button"
               onClick={onCancelEdit}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isUpdatingProfile || !hasChanges}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUpdatingProfile ? 'Updating...' : 'Save Changes'}
             </button>

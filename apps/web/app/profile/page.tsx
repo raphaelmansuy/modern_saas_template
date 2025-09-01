@@ -126,8 +126,9 @@ export default function ProfilePage() {
   if (!isLoaded) {
     return (
       <SidebarLayout sidebar={<ProfileSidebar />}>
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="flex flex-col items-center justify-center py-8 md:py-12">
+          <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-sm md:text-base text-gray-600">Loading your profile...</p>
         </div>
       </SidebarLayout>
     )
@@ -135,10 +136,10 @@ export default function ProfilePage() {
 
   return (
     <SidebarLayout sidebar={<ProfileSidebar />}>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <ProfileHeader />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6 2xl:gap-8">
           <ProfileOverview
             user={user}
             previewUrl={previewUrl}

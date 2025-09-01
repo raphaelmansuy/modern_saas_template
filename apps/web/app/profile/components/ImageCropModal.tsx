@@ -39,17 +39,28 @@ export const ImageCropModal = ({
   if (!showCropModal) return null
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+    <div 
+      className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="crop-modal-title"
+      aria-describedby="crop-modal-description"
+    >
+      <div className="relative mx-auto p-4 border w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
         <div className="mt-3">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Crop & Compress Image</h3>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+            <h3 id="crop-modal-title" className="text-lg font-medium text-gray-900">Crop & Compress Image</h3>
+            <div id="crop-modal-description" className="sr-only">
+              Use the crop tool to select the portion of your image you want to keep. 
+              Use zoom controls to adjust the view. Press Apply to save your changes.
+            </div>
+            
             {/* Zoom Controls */}
             <div className="flex items-center space-x-2">
               <button
                 onClick={onZoomOut}
                 disabled={zoom <= 0.5}
-                className="p-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                className="p-2 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
                 aria-label="Zoom out"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +73,7 @@ export const ImageCropModal = ({
               <button
                 onClick={onZoomIn}
                 disabled={zoom >= 3}
-                className="p-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                className="p-2 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
                 aria-label="Zoom in"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,7 +82,7 @@ export const ImageCropModal = ({
               </button>
               <button
                 onClick={onZoomReset}
-                className="p-1 rounded border border-gray-300 hover:bg-gray-50"
+                className="p-2 rounded border border-gray-300 hover:bg-gray-50"
                 aria-label="Reset zoom"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,14 +91,17 @@ export const ImageCropModal = ({
               </button>
             </div>
           </div>
+          
           <div className="mb-4">
             {previewUrl && (
               <div className="flex justify-center">
                 <div
                   className="relative overflow-hidden border border-gray-300 rounded"
                   style={{
-                    width: '400px',
-                    height: '400px',
+                    width: 'min(100%, 400px)',
+                    height: 'min(70vh, 400px)',
+                    maxWidth: '400px',
+                    maxHeight: '400px',
                     transform: `scale(${zoom})`,
                     transformOrigin: 'center'
                   }}
@@ -116,7 +130,8 @@ export const ImageCropModal = ({
               </div>
             )}
           </div>
-          <div className="flex justify-between items-center">
+          
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div className="text-sm text-gray-600 space-y-1">
               {completedCrop && (
                 <div>
@@ -128,7 +143,8 @@ export const ImageCropModal = ({
                 <div>Original: {imageDimensions.width} × {imageDimensions.height} pixels</div>
               )}
             </div>
-            <div className="flex space-x-3">
+            
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={onCancelCrop}
                 className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 disabled:opacity-50"

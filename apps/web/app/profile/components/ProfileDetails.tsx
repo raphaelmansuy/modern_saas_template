@@ -33,8 +33,8 @@ export const ProfileDetails = ({
   onSubmit
 }: ProfileDetailsProps) => {
   return (
-    <div className="lg:col-span-2">
-      <div className="space-y-6">
+    <div className="2xl:col-span-1 order-2 2xl:order-2">
+      <div className="space-y-4 md:space-y-6 lg:space-y-8">
         <PersonalInformation
           user={user}
           firstName={firstName}
