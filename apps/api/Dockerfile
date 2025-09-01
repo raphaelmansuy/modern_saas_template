@@ -23,8 +23,15 @@ RUN bun install
 COPY apps/api ./apps/api
 COPY packages/db ./packages/db
 
+# Build the application from the API directory
+WORKDIR /app/apps/api
+RUN bun run build
+
+# Go back to root for running
+WORKDIR /app
+
 # Expose port
 EXPOSE 3001
 
-# Start the application in dev mode
-CMD ["bun", "run", "dev"]
+# Start the application in production mode
+CMD ["bun", "run", "apps/api/dist/index.js"]

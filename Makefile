@@ -1,5 +1,5 @@
 # SaaS Starter Development Commands
-.PHONY: help dev dev-docker dev-local up down logs clean install db-reset db-studio
+.PHONY: help dev dev-docker dev-local up down logs clean install db-reset db-studio prod
 
 # Default target
 help:
@@ -7,6 +7,7 @@ help:
 	@echo "  setup         - Initial project setup"
 	@echo "  dev           - Start development with Docker (recommended)"
 	@echo "  dev-local     - Start development locally (requires PostgreSQL)"
+	@echo "  prod          - Start production environment with Docker"
 	@echo "  up            - Start Docker services"
 	@echo "  down          - Stop Docker services"
 	@echo "  logs          - Show all Docker logs"
@@ -35,6 +36,11 @@ dev-local:
 	docker-compose up -d db
 	@echo "Starting local development..."
 	bun run dev
+
+# Production commands
+prod:
+	@echo "Starting production environment with Docker..."
+	docker-compose -f docker-compose.prod.yml up --build
 
 # Docker commands
 up:
