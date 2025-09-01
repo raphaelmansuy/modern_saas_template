@@ -14,6 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { BreadcrumbItem } from '@/lib/store/navigation'
 import { ShoppingBagIcon, StarIcon, ShieldCheckIcon, TruckIcon, CreditCardIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 
+export const dynamic = 'force-dynamic'
+
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 const breadcrumbs: BreadcrumbItem[] = [

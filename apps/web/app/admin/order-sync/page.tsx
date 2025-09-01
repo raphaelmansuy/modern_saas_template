@@ -8,6 +8,8 @@ import { Button, Card, Badge, Progress, AlertDialog, AlertDialogAction, AlertDia
 import { BreadcrumbItem } from '@/lib/store/navigation'
 import { CheckCircleIcon, ExclamationTriangleIcon, ClockIcon, ArrowPathIcon, CogIcon } from '@heroicons/react/24/outline'
 
+export const dynamic = 'force-dynamic'
+
 const breadcrumbs: BreadcrumbItem[] = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Admin', href: '/admin' },

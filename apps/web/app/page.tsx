@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
 import { CheckCircleIcon, StarIcon, ShieldCheckIcon, UsersIcon } from '@heroicons/react/24/outline'
 
+export const dynamic = 'force-dynamic'
+
 export default function Home() {
   return (
     <PageLayout
