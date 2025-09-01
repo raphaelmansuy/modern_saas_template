@@ -1,8 +1,8 @@
 import { useUser } from '@clerk/nextjs'
-
-type UserType = ReturnType<typeof useUser>['user']
 import { MessageDisplay } from './MessageDisplay'
 import { UploadProgress } from './UploadProgress'
+
+type UserType = ReturnType<typeof useUser>['user']
 
 interface ProfileOverviewProps {
   user: UserType

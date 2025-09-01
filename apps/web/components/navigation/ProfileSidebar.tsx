@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { UserIcon, CogIcon, BellIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
+import { UserIcon, CogIcon, BellIcon, ShieldCheckIcon, ShoppingBagIcon } from '@heroicons/react/24/outline'
 
 const profileNavigation = [
   { name: 'Overview', href: '/profile', icon: UserIcon },
+  { name: 'Order History', href: '/orders', icon: ShoppingBagIcon },
   { name: 'Account Settings', href: '/profile/settings', icon: CogIcon },
   { name: 'Notifications', href: '/profile/notifications', icon: BellIcon },
   { name: 'Security', href: '/profile/security', icon: ShieldCheckIcon },

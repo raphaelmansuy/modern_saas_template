@@ -183,21 +183,21 @@ export default function Dashboard() {
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <div className="p-2 bg-green-100 rounded-lg">
-                  <UserIcon className="w-5 h-5 text-green-600" />
+                  <ShoppingBagIcon className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg">Profile</CardTitle>
-                  <CardDescription>Manage your account settings</CardDescription>
+                  <CardTitle className="text-lg">Order History</CardTitle>
+                  <CardDescription>View your past orders and receipts</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 mb-4">
-                Update your profile information and preferences.
+                Track your purchases, download invoices, and manage your order history.
               </p>
-              <Link href="/profile">
+              <Link href="/orders">
                 <Button variant="outline" className="w-full">
-                  Edit Profile
+                  View Orders
                 </Button>
               </Link>
             </CardContent>
@@ -278,10 +278,10 @@ export default function Dashboard() {
                   <span className="text-sm">Browse Products</span>
                 </Button>
               </Link>
-              <Link href="/profile">
+              <Link href="/orders">
                 <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center space-y-2">
-                  <UserIcon className="w-6 h-6" />
-                  <span className="text-sm">My Profile</span>
+                  <ShoppingBagIcon className="w-6 h-6" />
+                  <span className="text-sm">My Orders</span>
                 </Button>
               </Link>
               <Link href="/admin">

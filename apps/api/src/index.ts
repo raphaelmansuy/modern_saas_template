@@ -6,7 +6,7 @@ import { createClerkClient } from '@clerk/clerk-sdk-node'
 import Stripe from 'stripe'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { eq } from 'drizzle-orm'
+import { eq, gte, lte, like, or, and, asc, desc, count } from 'drizzle-orm'
 import { users, subscriptions, products, orders } from '@saas/db'
 import { StripeOrderSyncService } from './scripts/sync-orders'
 
@@ -551,6 +551,190 @@ app.put('/api/user/profile', async (c) => {
     }
     
     return c.json({ error: 'Failed to update profile' }, 500)
+  }
+})
+
+// Get user orders with pagination and filtering
+app.get('/api/user/orders', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+
+    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
+
+    // Verify the token and get user info
+    let payload
+    try {
+      payload = await clerkClient.verifyToken(token)
+    } catch (tokenError) {
+      console.error('Token verification failed:', tokenError)
+      return c.json({ error: 'Invalid or expired authentication token' }, 401)
+    }
+
+    if (!payload.sub) {
+      return c.json({ error: 'Invalid token' }, 401)
+    }
+
+    const clerkUserId = payload.sub
+
+    // Get user details from Clerk to find email
+    let clerkUser
+    try {
+      clerkUser = await clerkClient.users.getUser(clerkUserId)
+    } catch (userError) {
+      console.error('Error fetching user from Clerk:', userError)
+      return c.json({ error: 'Failed to get user information' }, 500)
+    }
+
+    const userEmail = clerkUser.primaryEmailAddress?.emailAddress
+    if (!userEmail) {
+      return c.json({ error: 'User email not found' }, 400)
+    }
+
+    // Find user in database by email
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, userEmail))
+      .limit(1)
+
+    if (dbUser.length === 0) {
+      // User doesn't exist in database yet, return empty orders
+      return c.json({
+        orders: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+        filters: {
+          status: 'all',
+          search: '',
+          dateFrom: '',
+          dateTo: '',
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        }
+      })
+    }
+
+    const dbUserId = dbUser[0].id
+
+    // Get query parameters
+    const page = parseInt(c.req.query('page') || '1')
+    const limit = parseInt(c.req.query('limit') || '10')
+    const status = c.req.query('status')
+    const search = c.req.query('search')
+    const dateFrom = c.req.query('dateFrom')
+    const dateTo = c.req.query('dateTo')
+    const sortBy = c.req.query('sortBy') || 'createdAt'
+    const sortOrder = c.req.query('sortOrder') || 'desc'
+
+    // Build where conditions
+    const whereConditions = [eq(orders.userId, dbUserId)]
+
+    if (status && status !== 'all') {
+      whereConditions.push(eq(orders.status, status))
+    }
+
+    // Date filtering
+    if (dateFrom) {
+      whereConditions.push(gte(orders.createdAt, new Date(dateFrom)))
+    }
+    if (dateTo) {
+      whereConditions.push(lte(orders.createdAt, new Date(dateTo)))
+    }
+
+    // Search functionality
+    let searchConditions = []
+    if (search) {
+      // Search by product name, description, or payment intent ID
+      searchConditions = [
+        like(products.name, `%${search}%`),
+        like(products.description, `%${search}%`),
+        like(orders.stripePaymentIntentId, `%${search}%`)
+      ]
+    }
+
+    // Calculate offset
+    const offset = (page - 1) * limit
+
+    // Build the query
+    let query = db
+      .select({
+        order: orders,
+        product: products,
+      })
+      .from(orders)
+      .leftJoin(products, eq(orders.productId, products.id))
+      .where(and(...whereConditions))
+
+    // Add search conditions if any
+    if (searchConditions.length > 0) {
+      query = query.where(or(...searchConditions))
+    }
+
+    // Add sorting
+    const sortColumn = sortBy === 'amount' ? orders.amount :
+                      sortBy === 'status' ? orders.status :
+                      sortBy === 'createdAt' ? orders.createdAt : orders.createdAt
+
+    query = sortOrder === 'asc' ? query.orderBy(asc(sortColumn)) : query.orderBy(desc(sortColumn))
+
+    // Get total count for pagination
+    const totalQuery = db
+      .select({ count: count() })
+      .from(orders)
+      .leftJoin(products, eq(orders.productId, products.id))
+      .where(and(...whereConditions))
+
+    if (searchConditions.length > 0) {
+      totalQuery.where(or(...searchConditions))
+    }
+
+    const [totalResult] = await totalQuery
+    const total = totalResult?.count || 0
+
+    // Add pagination
+    const ordersResult = await query.limit(limit).offset(offset)
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / limit)
+    const hasNextPage = page < totalPages
+    const hasPrevPage = page > 1
+
+    return c.json({
+      orders: ordersResult.map(item => ({
+        ...item.order,
+        product: item.product,
+        amount: item.order.amount / 100, // Convert cents to dollars
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage,
+        hasPrevPage,
+      },
+      filters: {
+        status: status || 'all',
+        search: search || '',
+        dateFrom: dateFrom || '',
+        dateTo: dateTo || '',
+        sortBy,
+        sortOrder,
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching user orders:', error)
+    return c.json({ error: 'Failed to fetch orders' }, 500)
   }
 })
 
@@ -1103,7 +1287,7 @@ app.get('/api/invoices/:paymentIntentId', async (c) => {
     })
   } catch (error) {
     console.error('Error retrieving invoice/receipt:', error)
-    return c.json({ 
+    return c.json({
       downloadUrl: null,
       message: 'Failed to retrieve invoice or receipt'
     }, 500)
