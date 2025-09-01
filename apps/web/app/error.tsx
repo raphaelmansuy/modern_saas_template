@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { Button } from '../components/ui'
-import { Card, CardContent } from '../components/ui'
+import { Button } from '@/components/ui'
+import { Card, CardContent } from '@/components/ui'
 import { ExclamationTriangleIcon, HomeIcon, ArrowPathIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline'
 
 export default function Error({

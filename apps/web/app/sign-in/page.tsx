@@ -1,7 +1,7 @@
 import { SignIn } from '@clerk/nextjs'
-import { PageLayout } from '../../components/layout/PageLayout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui'
-import { Badge } from '../../components/ui/badge'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
+import { Badge } from '@/components/ui/badge'
 import { ShieldCheckIcon, StarIcon, UsersIcon } from '@heroicons/react/24/outline'
 
 export default function SignInPage() {

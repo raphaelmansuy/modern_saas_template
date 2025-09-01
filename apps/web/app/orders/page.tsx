@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useUser, useAuth } from '@clerk/nextjs'
-import { apiClient } from '../../lib/api'
-import { PageLayout } from '../../components/layout/PageLayout'
-import { BreadcrumbItem } from '../../lib/store/navigation'
+import { apiClient } from '@/lib/api'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { BreadcrumbItem } from '@/lib/store/navigation'
 import {
   Button,
   Card,
@@ -28,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger
-} from '../../components/ui'
+} from '@/components/ui'
 import {
   ShoppingBagIcon,
   EyeIcon,

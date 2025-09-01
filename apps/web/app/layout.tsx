@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
-import { ClientProviders } from '../lib/ClientProviders'
-import { SkipLinks } from '../components/accessibility/SkipLinks'
-import { ErrorBoundary } from '../components/error/ErrorBoundary'
+import { ClientProviders } from '@/lib/ClientProviders'
+import { SkipLinks } from '@/components/accessibility/SkipLinks'
+import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import './globals.css'
 
 export const metadata: Metadata = {

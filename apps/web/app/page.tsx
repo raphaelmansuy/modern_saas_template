@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
-import { SignOutWithFeedback } from '../components/SignOutWithFeedback'
-import { PageLayout } from '../components/layout/PageLayout'
-import { Button } from '../components/ui'
-import { Badge } from '../components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui'
+import { SignOutWithFeedback } from '@/components/SignOutWithFeedback'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { Button } from '@/components/ui'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
 import { CheckCircleIcon, StarIcon, ShieldCheckIcon, UsersIcon } from '@heroicons/react/24/outline'
 
 export default function Home() {

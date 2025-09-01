@@ -9,8 +9,8 @@ import { useProfileData } from './hooks/useProfileData'
 import { useImageUpload } from './hooks/useImageUpload'
 import { useOnlineStatus } from './hooks/useOnlineStatus'
 import { useMessage } from './hooks/useMessage'
-import { SidebarLayout } from '../../components/layout/SidebarLayout'
-import { ProfileSidebar } from '../../components/navigation/ProfileSidebar'
+import { SidebarLayout } from '@/components/layout/SidebarLayout'
+import { ProfileSidebar } from '@/components/navigation/ProfileSidebar'
 
 export default function ProfilePage() {
   const isOnline = useOnlineStatus()

@@ -1,6 +1,6 @@
 import { useUser, useAuth } from '@clerk/nextjs'
 import { useState, useEffect } from 'react'
-import { apiClient } from '../../../lib/api'
+import { apiClient } from '@/lib/api'
 
 export const useProfileData = () => {
   const { user, isLoaded } = useUser()

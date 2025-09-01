@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { UserButton, useUser } from '@clerk/nextjs'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
-import { NavigationMenu } from '../navigation/NavigationMenu'
-import { MobileNavigation } from '../navigation/MobileNavigation'
+import { NavigationMenu } from '@/components/navigation/NavigationMenu'
+import { MobileNavigation } from '@/components/navigation/MobileNavigation'
 
 interface HeaderProps {
   user?: any

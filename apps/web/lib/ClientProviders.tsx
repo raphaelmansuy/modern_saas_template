@@ -1,7 +1,7 @@
 'use client'
 
 import { ClerkProvider } from '@clerk/nextjs'
-import { ToastProvider } from '../components/Toast'
+import { ToastProvider } from '@/components/Toast'
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (

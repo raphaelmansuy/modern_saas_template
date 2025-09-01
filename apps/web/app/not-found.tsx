@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { Button } from '../components/ui'
-import { Card, CardContent } from '../components/ui'
-import { Input } from '../components/ui'
+import { Button } from '@/components/ui'
+import { Card, CardContent } from '@/components/ui'
+import { Input } from '@/components/ui'
 import { MagnifyingGlassIcon, HomeIcon, ArrowLeftIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 

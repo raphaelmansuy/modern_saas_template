@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useClerk } from '@clerk/nextjs'
-import { useToast } from './Toast'
+import { useToast } from '@/components/Toast'
 
 export function SignOutWithFeedback() {
   const [isSigningOut, setIsSigningOut] = useState(false)

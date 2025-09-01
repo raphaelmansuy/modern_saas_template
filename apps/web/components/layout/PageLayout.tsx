@@ -1,9 +1,9 @@
 'use client'
 
-import { Header } from './Header'
-import { Breadcrumb } from '../navigation/Breadcrumb'
-import { Footer } from './Footer'
-import { BreadcrumbItem } from '../../lib/store/navigation'
+import { Header } from '@/components/layout/Header'
+import { Breadcrumb } from '@/components/navigation/Breadcrumb'
+import { Footer } from '@/components/layout/Footer'
+import { BreadcrumbItem } from '@/lib/store/navigation'
 
 interface PageLayoutProps {
   title?: string

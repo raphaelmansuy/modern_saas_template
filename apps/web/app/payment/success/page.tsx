@@ -4,9 +4,9 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircleIcon, DocumentTextIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
-import { PageLayout } from '../../../components/layout/PageLayout'
-import { Button } from '../../../components/ui'
-import { BreadcrumbItem } from '../../../lib/store/navigation'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { Button } from '@/components/ui'
+import { BreadcrumbItem } from '@/lib/store/navigation'
 
 const breadcrumbs: BreadcrumbItem[] = [
   { label: 'Dashboard', href: '/dashboard' },

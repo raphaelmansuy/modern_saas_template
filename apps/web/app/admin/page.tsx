@@ -2,12 +2,12 @@
 
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/nextjs'
 import Link from 'next/link'
-import { PageLayout } from '../../components/layout/PageLayout'
-import { Button } from '../../components/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui'
-import { Badge } from '../../components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
-import { BreadcrumbItem } from '../../lib/store/navigation'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { Button } from '@/components/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { BreadcrumbItem } from '@/lib/store/navigation'
 import {
   UsersIcon,
   ChartBarIcon,

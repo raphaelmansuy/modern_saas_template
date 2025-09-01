@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
-import { PageLayout } from '../../../components/layout/PageLayout'
-import { Button, Card, Badge, Progress, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../components/ui'
-import { BreadcrumbItem } from '../../../lib/store/navigation'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { Button, Card, Badge, Progress, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui'
+import { BreadcrumbItem } from '@/lib/store/navigation'
 import { CheckCircleIcon, ExclamationTriangleIcon, ClockIcon, ArrowPathIcon, CogIcon } from '@heroicons/react/24/outline'
 
 const breadcrumbs: BreadcrumbItem[] = [
