@@ -1,53 +1,15 @@
-import { db, products, orders, users } from './index'
-import { sql } from 'drizzle-orm'
+import { db, products } from './index'
 
-async function seedDatabase() {
+export async function seedDatabase() {
   try {
-    console.log('Creating tables if they don\'t exist...')
+    console.log('🌱 Starting database seeding...')
 
-    // Create the users table if it doesn't exist
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email TEXT NOT NULL UNIQUE,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `)
-
-    // Create the products table if it doesn't exist
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS products (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        price INTEGER NOT NULL,
-        currency TEXT DEFAULT 'usd',
-        stripe_product_id TEXT,
-        stripe_price_id TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `)
-
-    // Create the orders table if it doesn't exist
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS orders (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id),
-        product_id INTEGER REFERENCES products(id),
-        stripe_payment_intent_id TEXT NOT NULL,
-        quantity INTEGER NOT NULL,
-        amount INTEGER NOT NULL,
-        currency TEXT NOT NULL,
-        status TEXT NOT NULL,
-        customer_email TEXT,
-        customer_name TEXT,
-        customer_phone TEXT,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      )
-    `)
-
-    console.log('Seeding products...')
+    // Check if products already exist to avoid duplicate seeding
+    const existingProducts = await db.select().from(products).limit(1)
+    if (existingProducts.length > 0) {
+      console.log('📋 Products already exist, skipping seeding')
+      return
+    }
 
     const sampleProducts = [
       {
@@ -77,17 +39,30 @@ async function seedDatabase() {
       },
     ]
 
+    console.log('📝 Inserting sample products...')
     for (const product of sampleProducts) {
       await db.insert(products).values(product)
-      console.log(`Inserted product: ${product.name}`)
+      console.log(`✅ Inserted product: ${product.name}`)
     }
 
-    console.log('Seeding completed successfully!')
+    console.log('🎉 Seeding completed successfully!')
   } catch (error) {
-    console.error('Error seeding database:', error)
-  } finally {
-    process.exit(0)
+    console.error('❌ Error during seeding:', error)
+    throw error
   }
 }
 
-seedDatabase()
+// Legacy function for backward compatibility
+async function seedDatabaseLegacy() {
+  await seedDatabase()
+}
+
+// Run seeding if this script is executed directly
+if (require.main === module) {
+  seedDatabase()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error('Seeding failed:', error)
+      process.exit(1)
+    })
+}

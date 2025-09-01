@@ -37,8 +37,8 @@ echo "⏳ Waiting for database to be ready..."
 sleep 10
 
 # Generate database schema
-echo "🗄️  Setting up database..."
-cd packages/db && bun run generate && bun run push
+echo "🗄️  Setting up database schema and running migrations..."
+cd packages/db && bun run setup
 
 echo "✅ Setup complete!"
 echo ""

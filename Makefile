@@ -67,9 +67,22 @@ db-reset:
 	docker-compose down -v
 	docker-compose up -d db
 
+db-setup:
+	@echo "Setting up database with schema and seed data..."
+	cd packages/db && bun run setup
+
+db-migrate:
+	@echo "Running database migrations..."
+	cd packages/db && bun run migrate
+
+db-seed:
+	@echo "Seeding database with sample data..."
+	cd packages/db && bun run seed
+
 db-studio:
 	@echo "Opening Drizzle Studio..."
-	cd packages/db && bun run drizzle-kit studio
+	@echo "Note: Drizzle Studio runs on https://local.drizzle.studio (not localhost)"
+	@cd packages/db && DATABASE_URL="postgresql://user:password@db:5432/saas_db" bun run studio
 
 db-generate:
 	@echo "Generating database migrations..."

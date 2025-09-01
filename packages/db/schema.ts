@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, decimal, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, timestamp, integer, decimal, boolean, index } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -23,7 +23,9 @@ export const products = pgTable('products', {
   stripeProductId: text('stripe_product_id'),
   stripePriceId: text('stripe_price_id'),
   createdAt: timestamp('created_at').defaultNow(),
-})
+}, (table) => ({
+  stripeProductIdIdx: index('idx_products_stripe_product_id').on(table.stripeProductId),
+}))
 
 export const orders = pgTable('orders', {
   id: serial('id').primaryKey(),
@@ -45,4 +47,8 @@ export const orders = pgTable('orders', {
   lastSyncAttempt: timestamp('last_sync_attempt'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-})
+}, (table) => ({
+  userIdIdx: index('idx_orders_user_id').on(table.userId),
+  statusIdx: index('idx_orders_status').on(table.status),
+  createdAtIdx: index('idx_orders_created_at').on(table.createdAt),
+}))
