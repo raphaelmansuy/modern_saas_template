@@ -1,13 +1,9 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
 import { eq, and, or, lt, count, sql } from 'drizzle-orm'
+import { db } from '@saas/db'
 import { orders } from '@saas/db'
 import Stripe from 'stripe'
 
-// Database connection
-const connectionString = process.env.DATABASE_URL!
-const client = postgres(connectionString)
-const db = drizzle(client)
+// Database connection is now handled by the shared @saas/db package
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {

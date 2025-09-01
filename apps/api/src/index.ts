@@ -4,16 +4,22 @@ import { z } from 'zod'
 import { cors } from 'hono/cors'
 import { createClerkClient } from '@clerk/clerk-sdk-node'
 import Stripe from 'stripe'
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
 import { eq, gte, lte, like, or, and, asc, desc, count } from 'drizzle-orm'
+import { db, pool, testConnection, getPoolStats } from '@saas/db'
 import { users, subscriptions, products, orders } from '@saas/db'
 import { StripeOrderSyncService } from './scripts/sync-orders'
 
-// Database connection
-const connectionString = process.env.DATABASE_URL!
-const client = postgres(connectionString)
-const db = drizzle(client)
+// Database connection is now handled by the shared @saas/db package
+// Test database connection on startup
+testConnection().then((connected) => {
+  if (connected) {
+    console.log('Database connection pool initialized successfully')
+    console.log('Pool stats:', getPoolStats())
+  } else {
+    console.error('Failed to connect to database')
+    process.exit(1)
+  }
+})
 
 const app = new Hono()
 
@@ -56,18 +62,51 @@ const openApiSpec = {
     }
   ],
   paths: {
-    '/': {
+    '/health': {
       get: {
-        summary: 'Health check',
-        description: 'API health check endpoint',
+        summary: 'Health check with database status',
+        description: 'Returns the health status of the API and database connection pool',
         responses: {
           '200': {
-            description: 'Successful response',
+            description: 'Service is healthy',
             content: {
-              'text/plain': {
+              'application/json': {
                 schema: {
-                  type: 'string',
-                  example: 'Hello from Hono API!'
+                  type: 'object',
+                  properties: {
+                    status: { type: 'string', example: 'healthy' },
+                    timestamp: { type: 'string', format: 'date-time' },
+                    database: {
+                      type: 'object',
+                      properties: {
+                        connected: { type: 'boolean' },
+                        pool: {
+                          type: 'object',
+                          properties: {
+                            totalCount: { type: 'number' },
+                            idleCount: { type: 'number' },
+                            waitingCount: { type: 'number' }
+                          }
+                        }
+                      }
+                    },
+                    uptime: { type: 'number' }
+                  }
+                }
+              }
+            }
+          },
+          '503': {
+            description: 'Service is unhealthy',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: { type: 'string', example: 'unhealthy' },
+                    timestamp: { type: 'string', format: 'date-time' },
+                    error: { type: 'string' }
+                  }
                 }
               }
             }
@@ -460,9 +499,32 @@ app.get('/docs', (c) => {
   return c.html(html)
 })
 
-// Health check route
-app.get('/', (c) => {
-  return c.text('Hello from Hono API!')
+// Health check route with database pool stats
+app.get('/health', async (c) => {
+  try {
+    // Test database connection
+    const isDbConnected = await testConnection()
+    const poolStats = getPoolStats()
+
+    const health = {
+      status: isDbConnected ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: isDbConnected,
+        pool: poolStats,
+      },
+      uptime: process.uptime(),
+    }
+
+    return c.json(health, isDbConnected ? 200 : 503)
+  } catch (error) {
+    console.error('Health check failed:', error)
+    return c.json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Health check failed'
+    }, 503)
+  }
 })
 
 // Get all products
