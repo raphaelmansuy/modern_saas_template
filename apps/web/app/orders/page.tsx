@@ -22,7 +22,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Skeleton
+  Skeleton,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from '../../components/ui'
 import {
   ShoppingBagIcon,
@@ -99,6 +104,10 @@ export default function OrdersPage() {
   const [totalOrders, setTotalOrders] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
 
+  // Dialog state
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
   // Calculate summary statistics
   const totalSpent = orders.reduce((sum, order) => sum + order.amount, 0)
 
@@ -168,8 +177,8 @@ export default function OrdersPage() {
   }
 
   const handleViewDetails = (order: Order) => {
-    // TODO: Implement order details modal/page
-    console.log('View order details:', order)
+    setSelectedOrder(order)
+    setIsDialogOpen(true)
   }
 
   const handleDownloadInvoice = async (order: Order) => {
@@ -544,6 +553,147 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
+
+      {/* Order Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <span>Order Details</span>
+              <Badge variant="outline" className="text-xs">
+                #{selectedOrder?.id}
+              </Badge>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedOrder && (
+            <div className="space-y-6">
+              {/* Order Status and Basic Info */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-600">Status:</span>
+                    <Badge variant={getStatusConfig(selectedOrder.status).variant} className={getStatusConfig(selectedOrder.status).color}>
+                      {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
+                    </Badge>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-gray-900">
+                      ${selectedOrder.amount.toFixed(2)}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {selectedOrder.currency.toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-600">Order Date:</span>
+                    <div className="text-gray-900">
+                      {new Date(selectedOrder.createdAt).toLocaleDateString()} at{' '}
+                      {new Date(selectedOrder.createdAt).toLocaleTimeString()}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">Last Updated:</span>
+                    <div className="text-gray-900">
+                      {new Date(selectedOrder.updatedAt).toLocaleDateString()} at{' '}
+                      {new Date(selectedOrder.updatedAt).toLocaleTimeString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Information */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4">Product Information</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{selectedOrder.product.name}</h4>
+                      {selectedOrder.product.description && (
+                        <p className="text-sm text-gray-600 mt-1">{selectedOrder.product.description}</p>
+                      )}
+                    </div>
+                    <div className="text-right ml-4">
+                      <div className="font-medium">
+                        ${selectedOrder.product.price.toFixed(2)} {selectedOrder.product.currency.toUpperCase()}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Qty: {selectedOrder.quantity}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Information */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-600">Name:</span>
+                    <div className="text-gray-900">{selectedOrder.customerName}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">Email:</span>
+                    <div className="text-gray-900">{selectedOrder.customerEmail}</div>
+                  </div>
+                  {selectedOrder.customerPhone && (
+                    <div>
+                      <span className="font-medium text-gray-600">Phone:</span>
+                      <div className="text-gray-900">{selectedOrder.customerPhone}</div>
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium text-gray-600">User ID:</span>
+                    <div className="text-gray-900">{selectedOrder.userId}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Information */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4">Payment Information</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-600">Payment Intent ID:</span>
+                    <span className="text-gray-900 font-mono text-xs">{selectedOrder.stripePaymentIntentId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-600">Product ID:</span>
+                    <span className="text-gray-900">{selectedOrder.productId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-600">Provisional:</span>
+                    <span className="text-gray-900">{selectedOrder.isProvisional ? 'Yes' : 'No'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                {selectedOrder.status === 'completed' && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      handleDownloadInvoice(selectedOrder)
+                      setIsDialogOpen(false)
+                    }}
+                  >
+                    <DocumentIcon className="w-4 h-4 mr-2" />
+                    Download Invoice
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   )
 }
