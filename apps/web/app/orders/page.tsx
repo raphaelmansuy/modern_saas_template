@@ -39,6 +39,8 @@ import {
   CalendarDaysIcon
 } from '@heroicons/react/24/outline'
 
+export const dynamic = 'force-dynamic'
+
 const breadcrumbs: BreadcrumbItem[] = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Order History' }

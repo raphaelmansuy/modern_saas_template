@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: 'A starter kit for SaaS applications',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default function RootLayout({
   children,
 }: {

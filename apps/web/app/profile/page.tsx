@@ -12,6 +12,8 @@ import { useMessage } from './hooks/useMessage'
 import { SidebarLayout } from '@/components/layout/SidebarLayout'
 import { ProfileSidebar } from '@/components/navigation/ProfileSidebar'
 
+export const dynamic = 'force-dynamic'
+
 export default function ProfilePage() {
   const isOnline = useOnlineStatus()
   const { message, showMessage } = useMessage()
