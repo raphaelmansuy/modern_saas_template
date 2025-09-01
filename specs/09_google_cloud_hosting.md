@@ -20,28 +20,56 @@ This report analyzes the optimal Google Cloud hosting strategy for the monorepo 
 
 ### Recommended Google Cloud Architecture
 
+```mermaid
+graph TB
+    %% External Users
+    User[👥 Users] --> CLB[🌐 Cloud Load Balancing]
+    
+    %% Frontend Layer
+    CLB --> CRWeb[🚀 Cloud Run<br/>Frontend<br/>Next.js]
+    
+    %% API Layer
+    CLB --> CRAPI1[🚀 Cloud Run<br/>API Service 1<br/>Hono.js]
+    CLB --> CRAPI2[🚀 Cloud Run<br/>API Service 2<br/>Hono.js]
+    
+    %% Database Layer
+    CRAPI1 --> CloudSQL[(🗄️ Cloud SQL<br/>PostgreSQL<br/>Private IP)]
+    CRAPI2 --> CloudSQL
+    
+    %% External Services
+    CRAPI1 --> Clerk[🔐 Clerk<br/>Authentication]
+    CRAPI2 --> Stripe[💳 Stripe<br/>Payments]
+    CRAPI1 --> Resend[📧 Resend<br/>Email]
+    CRAPI2 --> Sentry[📊 Sentry<br/>Monitoring]
+    CRAPI1 --> PostHog[📈 PostHog<br/>Analytics]
+    
+    %% Networking
+    CRWeb -.->|Internal| CRAPI1
+    CRWeb -.->|Internal| CRAPI2
+    CRAPI1 -.->|VPC| CloudSQL
+    CRAPI2 -.->|VPC| CloudSQL
+    
+    %% Styling
+    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef api fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef database fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef network fill:#fafafa,stroke:#424242,stroke-width:1px
+    
+    class CRWeb frontend
+    class CRAPI1,CRAPI2 api
+    class CloudSQL database
+    class Clerk,Stripe,Resend,Sentry,PostHog external
+    class CLB network
 ```
-┌─────────────────┐    ┌─────────────────┐
-│   Cloud Load    │    │     Cloud       │
-│   Balancing     │────│     Run         │
-│                 │    │  (Frontend)     │
-└─────────────────┘    └─────────────────┘
-          │                       │
-          │                       │
-┌─────────────────┐    ┌─────────────────┐
-│     Cloud       │    │     Cloud       │
-│     Run         │    │     Run         │
-│   (API)         │    │   (API)         │
-└─────────────────┘    └─────────────────┘
-          │                       │
-          └───────────────────────┘
-                   │
-          ┌─────────────────┐
-          │   Cloud SQL     │
-          │ PostgreSQL      │
-          │ (Private IP)    │
-          └─────────────────┘
-```
+
+**Architecture Components:**
+- **Cloud Load Balancing**: Global load balancer for distributing traffic
+- **Cloud Run (Frontend)**: Serverless container for Next.js application
+- **Cloud Run (API)**: Serverless containers for Hono.js API services
+- **Cloud SQL**: Managed PostgreSQL database with private IP connectivity
+- **VPC Network**: Private network for secure service communication
+- **External Services**: Third-party integrations for auth, payments, email, monitoring, and analytics
 
 ### Service Configuration
 
