@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This report analyzes the optimal Google Cloud hosting strategy for the monorepo SaaS starter kit, consisting of a Next.js frontend, Hono.js API backend, and PostgreSQL database. The recommended architecture leverages Cloud Run for serverless container deployment and Cloud SQL for managed PostgreSQL hosting, providing excellent scalability, cost efficiency, and operational simplicity.
+This report analyzes the optimal Google Cloud hosting strategy for the monorepo SaaS starter kit, consisting of a Next.js 15 frontend, Hono.js API backend, and PostgreSQL database. The recommended architecture leverages Cloud Run for serverless container deployment and Cloud SQL for managed PostgreSQL hosting, providing excellent scalability, cost efficiency, and operational simplicity.
 
 **Key Findings:**
 - **Monthly Cost Range**: $15-100 depending on traffic and resource allocation
@@ -13,10 +13,30 @@ This report analyzes the optimal Google Cloud hosting strategy for the monorepo 
 ## Architecture Overview
 
 ### Current Application Structure
-- **Frontend**: Next.js 14 with App Router (apps/web/)
-- **Backend**: Hono.js API server (apps/api/)
+- **Frontend**: Next.js 15 with App Router (apps/web/) using Bun
+- **Backend**: Hono.js API server (apps/api/) using Bun
 - **Database**: PostgreSQL with Drizzle ORM (packages/db/)
+- **Package Manager**: Bun for fast dependency management and builds
 - **External Services**: Clerk (auth), Stripe (payments), Resend (email), Sentry (monitoring), PostHog (analytics)
+
+### Next.js 15 and Bun Considerations
+
+**Next.js 15 Benefits for Cloud Run:**
+- **Improved Performance**: Better caching and optimization features
+- **Enhanced App Router**: More robust server components and streaming
+- **Turbopack Integration**: Faster development builds (though Docker uses production builds)
+- **React 18+ Features**: Full support for concurrent features and Suspense
+
+**Bun Advantages:**
+- **Faster Installs**: 3-5x faster than npm for dependency installation
+- **Native TypeScript**: Built-in TypeScript execution without transpilation
+- **Better DX**: Improved development experience with faster cold starts
+- **Docker Compatibility**: Works seamlessly in containerized environments
+
+**Deployment Optimizations:**
+- Use multi-stage Docker builds to leverage Bun's speed during build time
+- Configure proper Node.js runtime in Cloud Run (Bun transpiles to Node.js)
+- Take advantage of Next.js 15's improved static generation for better performance
 
 ### Recommended Google Cloud Architecture
 
@@ -26,7 +46,7 @@ graph TB
     User[👥 Users] --> CLB[🌐 Cloud Load Balancing]
     
     %% Frontend Layer
-    CLB --> CRWeb[🚀 Cloud Run<br/>Frontend<br/>Next.js]
+    CLB --> CRWeb[🚀 Cloud Run<br/>Frontend<br/>Next.js 15]
     
     %% API Layer
     CLB --> CRAPI1[🚀 Cloud Run<br/>API Service 1<br/>Hono.js]
@@ -426,7 +446,9 @@ These advanced optimizations can reduce your Google Cloud costs by 30-50% while 
 1. Google Cloud Project with billing enabled
 2. gcloud CLI installed and configured
 3. Docker installed locally
-4. Artifact Registry enabled
+4. Bun installed (for local development and faster builds)
+5. Next.js 15 compatible Node.js version (18.17+ recommended)
+6. Artifact Registry enabled
 
 ### Step-by-Step Deployment
 
