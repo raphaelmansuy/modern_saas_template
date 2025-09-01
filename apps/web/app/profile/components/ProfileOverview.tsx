@@ -104,6 +104,19 @@ export const ProfileOverview = ({
             />
           </div>
 
+          {/* Mobile Profile Info */}
+          <div className="md:hidden text-center space-y-1">
+            <h2 className="text-lg font-semibold text-gray-900">
+              {user!.firstName} {user!.lastName}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {user!.emailAddresses[0]?.emailAddress}
+            </p>
+            <p className="text-xs text-gray-500">
+              Member since {user!.createdAt ? new Date(user!.createdAt).toLocaleDateString() : 'Unknown'}
+            </p>
+          </div>
+
           {/* Enhanced Upload Area with Mobile Optimization */}
           <div
             className={`w-full p-4 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
@@ -253,13 +266,13 @@ export const ProfileOverview = ({
             <MessageDisplay message={message} />
           </div>
 
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <h2 className="hidden md:block text-xl font-semibold text-gray-900 mb-2">
             {user!.firstName} {user!.lastName}
           </h2>
-          <p className="text-gray-600 mb-4">
+          <p className="hidden md:block text-gray-600 mb-4">
             {user!.emailAddresses[0]?.emailAddress}
           </p>
-          <div className="text-sm text-gray-500">
+          <div className="hidden md:block text-sm text-gray-500">
             Member since {user!.createdAt ? new Date(user!.createdAt).toLocaleDateString() : 'Unknown'}
           </div>
         </div>

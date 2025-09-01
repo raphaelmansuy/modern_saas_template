@@ -139,6 +139,24 @@ export default function ProfilePage() {
       <div className="space-y-4 md:space-y-6">
         <ProfileHeader />
 
+        {/* Mobile Quick Stats */}
+        <div className="md:hidden bg-white border border-gray-200 rounded-lg p-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-gray-900">
+                {user!.firstName?.[0]}{user!.lastName?.[0]}
+              </div>
+              <div className="text-sm text-gray-600">Initials</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">
+                {user!.createdAt ? new Date(user!.createdAt).getFullYear() : '2024'}
+              </div>
+              <div className="text-sm text-gray-600">Member Since</div>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6 2xl:gap-8">
           <ProfileOverview
             user={user}
@@ -182,6 +200,19 @@ export default function ProfilePage() {
             onSubmit={handleProfileSubmit}
           />
         </div>
+      </div>
+
+      {/* Mobile Floating Action Button */}
+      <div className="md:hidden fixed bottom-20 right-4 z-40">
+        <button
+          onClick={() => document.getElementById('personal-info')?.scrollIntoView({ behavior: 'smooth' })}
+          className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-colors"
+          aria-label="Edit profile information"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
       </div>
 
       <ImageCropModal
