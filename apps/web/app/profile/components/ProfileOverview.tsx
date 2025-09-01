@@ -22,14 +22,14 @@ interface ProfileOverviewProps {
   isImageValid: boolean | null
   isOnline: boolean
   message: { type: 'success' | 'error' | 'info' | 'warning'; text: string } | null
-  onFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => Promise<any>
+  onFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>
   onDragOver: (e: React.DragEvent) => void
   onDragLeave: (e: React.DragEvent) => void
-  onDrop: (e: React.DragEvent) => Promise<any>
+  onDrop: (e: React.DragEvent) => Promise<void>
   onUploadClick: () => void
-  onConfirmUpload: () => Promise<any>
+  onConfirmUpload: () => Promise<void>
   onCancelSelection: () => void
-  onRemovePicture: () => Promise<any>
+  onRemovePicture: () => Promise<void>
   onCropClick: () => void
 }
 
@@ -256,7 +256,7 @@ export const ProfileOverview = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium">You're offline</p>
+                  <p className="font-medium">You&apos;re offline</p>
                   <p className="text-red-500">Image upload is disabled. Your changes will be saved when connection is restored.</p>
                 </div>
               </div>

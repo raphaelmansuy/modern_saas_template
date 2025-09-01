@@ -467,7 +467,7 @@ export default function ProductsPage() {
               <div className="mb-6">
                 <ShoppingBagIcon className="mx-auto h-16 w-16 text-gray-400 mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No products available</h3>
-                <p className="text-gray-600">We're working on adding new products. Check back soon!</p>
+                <p className="text-gray-600">We&apos;re working on adding new products. Check back soon!</p>
               </div>
             </div>
           )}

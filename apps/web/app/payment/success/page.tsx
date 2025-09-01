@@ -423,7 +423,7 @@ function PaymentSuccessContent() {
         {/* Additional Information */}
         <div className="mt-8 text-center print:hidden">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <h3 className="text-sm font-medium text-blue-800 mb-2">What's Next?</h3>
+            <h3 className="text-sm font-medium text-blue-800 mb-2">What&apos;s Next?</h3>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• A confirmation email has been sent to your email address</li>
               <li>• Your order is being processed and will be shipped soon</li>

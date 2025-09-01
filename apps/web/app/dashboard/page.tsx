@@ -82,7 +82,7 @@ export default function Dashboard() {
                 {getGreeting()}, {user?.firstName || 'there'}!
               </h1>
               <p className="text-gray-600">
-                Welcome back to your dashboard. Here's what's happening today.
+                Welcome back to your dashboard. Here&apos;s what&apos;s happening today.
               </p>
               <div className="flex items-center space-x-2 mt-2">
                 <Badge variant="secondary" className="text-xs">

@@ -62,7 +62,7 @@ export default function SignUpPage() {
             </div>
 
             <div className="bg-white/50 backdrop-blur-sm rounded-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">What you'll get:</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">What you&apos;ll get:</h3>
               <ul className="space-y-2 text-gray-700">
                 <li className="flex items-center space-x-2">
                   <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0" />

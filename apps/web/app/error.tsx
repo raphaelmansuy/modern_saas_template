@@ -30,10 +30,10 @@ export default function Error({
                   Oops! Something went wrong
                 </h1>
                 <p className="text-xl text-gray-600 mb-6">
-                  We're sorry, but something unexpected happened while processing your request.
+                  We&apos;re sorry, but something unexpected happened while processing your request.
                 </p>
                 <p className="text-gray-500 mb-8">
-                  Don't worry, our team has been notified and is working to fix this issue.
+                  Don&apos;t worry, our team has been notified and is working to fix this issue.
                 </p>
               </div>
 

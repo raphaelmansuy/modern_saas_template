@@ -22,7 +22,7 @@ export const apiClient = {
     })
   },
 
-  post: async (endpoint: string, data?: any, options?: RequestInit) => {
+  post: async (endpoint: string, data?: unknown, options?: RequestInit) => {
     const url = `${getApiUrl()}${endpoint}`
     const headers = new Headers()
     headers.set('Content-Type', 'application/json')
@@ -39,7 +39,7 @@ export const apiClient = {
     })
   },
 
-  put: async (endpoint: string, data?: any, options?: RequestInit) => {
+  put: async (endpoint: string, data?: unknown, options?: RequestInit) => {
     const url = `${getApiUrl()}${endpoint}`
     const headers = new Headers()
     headers.set('Content-Type', 'application/json')

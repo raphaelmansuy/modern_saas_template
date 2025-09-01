@@ -36,7 +36,7 @@ export const useProfileData = () => {
       }
 
       // Only include fields that have changed
-      const updateData: any = {}
+      const updateData: { firstName?: string; lastName?: string } = {}
       const trimmedFirstName = firstName.trim()
       const trimmedLastName = lastName.trim()
       

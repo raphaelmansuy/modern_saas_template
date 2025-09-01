@@ -68,7 +68,7 @@ export default function AdminPage() {
                   Access Restricted
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  You don't have administrator privileges to access this page.
+                  You don&apos;t have administrator privileges to access this page.
                 </p>
                 <Badge variant="secondary" className="mb-6">
                   Current Role: {(user?.publicMetadata?.role as string) || 'User'}

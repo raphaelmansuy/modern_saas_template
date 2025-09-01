@@ -41,7 +41,7 @@ export function SignOutWithFeedback() {
             </div>
           </div>
           <p className="text-gray-600 mb-6">
-            Are you sure you want to sign out? You'll need to sign in again to access your account.
+            Are you sure you want to sign out? You&apos;ll need to sign in again to access your account.
           </p>
           <div className="flex gap-3 justify-end">
             <button
