@@ -13,7 +13,7 @@ export interface ImageDimensions {
 
 export const validateImageFile = async (file: File): Promise<ImageValidationResult> => {
   // Check file type
-  if (!IMAGE_CONFIG.ACCEPTED_TYPES.includes(file.type)) {
+  if (!IMAGE_CONFIG.ACCEPTED_TYPES.includes(file.type as typeof IMAGE_CONFIG.ACCEPTED_TYPES[number])) {
     return {
       isValid: false,
       error: `Invalid file type. Please select: ${IMAGE_CONFIG.ACCEPTED_TYPES.map(type => type.split('/')[1].toUpperCase()).join(', ')}`

@@ -2,16 +2,12 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { UserButton, useUser, User } from '@clerk/nextjs'
+import { UserButton, useUser } from '@clerk/nextjs'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { NavigationMenu } from '@/components/navigation/NavigationMenu'
 import { MobileNavigation } from '@/components/navigation/MobileNavigation'
 
-interface HeaderProps {
-  user?: User
-}
-
-export function Header({ user }: HeaderProps) {
+export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { isLoaded, isSignedIn } = useUser()
 

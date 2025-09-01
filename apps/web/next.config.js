@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const path = require('path');
 
 const nextConfig = {
   // Disable static generation to avoid React 19 SSR issues
@@ -25,4 +22,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+module.exports = nextConfig

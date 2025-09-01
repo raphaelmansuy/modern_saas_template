@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
-    "build": "bun build src/index.ts",
+    "build": "bun build --target node --outdir dist src/index.ts",
     "start": "bun run dist/index.js",
     "sync-orders": "bun run src/scripts/sync-orders.ts"
   },
