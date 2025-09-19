@@ -1,5 +1,5 @@
 {
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": ["**/.env.*local", ".env"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -8,7 +8,8 @@
     "lint": {},
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["DATABASE_URL", "API_URL", "NEXT_PUBLIC_API_URL", "CORS_ORIGINS", "CLERK_SECRET_KEY", "STRIPE_SECRET_KEY", "RESEND_API_KEY", "SENTRY_DSN", "NEXT_PUBLIC_POSTHOG_KEY", "NEXT_PUBLIC_POSTHOG_HOST", "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "NEXT_PUBLIC_CLERK_SIGN_IN_URL", "NEXT_PUBLIC_CLERK_SIGN_UP_URL", "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL", "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL", "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"]
     },
     "test": {}
   }

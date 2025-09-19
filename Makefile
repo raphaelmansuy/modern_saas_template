@@ -8,7 +8,7 @@ YELLOW := \033[33m
 RED := \033[31m
 CYAN := \033[36m
 
-.PHONY: help dev dev-local start stop restart status logs clean install prod test
+.PHONY: help dev dev-local dev-local-stop start stop restart status logs clean install prod test
 .PHONY: db-create db-create-local db-reset db-setup db-migrate db-seed db-studio db-generate db-push
 .PHONY: quick-start full-reset check-deps
 
@@ -21,7 +21,8 @@ help: ## 📚 Show this help message
 	@echo "$(BOLD)$(GREEN)📋 Quick Start:$(RESET)"
 	@echo "  $(CYAN)make quick-start$(RESET)  - 🏃‍♂️ Setup and start everything (new users)"
 	@echo "  $(CYAN)make dev$(RESET)          - 🐳 Start development with Docker"
-	@echo "  $(CYAN)make dev-local$(RESET)    - 💻 Start development locally"
+	@echo "  $(CYAN)make dev-local$(RESET)    - 💻 Start development locally (auto-starts DB)"
+	@echo "  $(CYAN)make dev-local-stop$(RESET) - 🛑 Stop local development database"
 	@echo ""
 	@echo "$(BOLD)$(GREEN)🛠  Setup & Installation:$(RESET)"
 	@echo "  $(CYAN)setup$(RESET)            - 📦 Initial project setup"
@@ -97,10 +98,60 @@ dev: up ## 🐳 Start development with Docker (recommended)
 
 dev-local: ## 💻 Start development locally
 	@echo "$(BOLD)$(BLUE)🚀 Starting local development...$(RESET)"
-	@echo "$(YELLOW)⚠️  Starting database with Docker...$(RESET)"
-	@docker-compose up -d db
-	@echo "$(YELLOW)⚠️  Make sure to configure DATABASE_URL for local connection$(RESET)"
-	@bun run dev
+	@echo "$(YELLOW)🔍 Checking environment configuration...$(RESET)"
+	@if [ ! -f .env ]; then \
+		echo "$(YELLOW)📝 Creating .env file from .env.example...$(RESET)"; \
+		cp .env.example .env; \
+		echo "$(GREEN)✅ .env file created! Please update it with your credentials.$(RESET)"; \
+	else \
+		echo "$(GREEN)✅ .env file exists!$(RESET)"; \
+	fi
+	@echo "$(YELLOW)🔍 Checking if database is already running...$(RESET)"
+	@if ! docker-compose ps db | grep -q "Up"; then \
+		echo "$(YELLOW)🐳 Starting database with Docker...$(RESET)"; \
+		docker-compose up -d db; \
+	else \
+		echo "$(GREEN)✅ Database is already running!$(RESET)"; \
+	fi
+	@echo "$(YELLOW)⏳ Waiting for database to be ready...$(RESET)"
+	@timeout=60; \
+	while [ $$timeout -gt 0 ]; do \
+		if docker-compose exec -T db pg_isready -U user -d saas_db >/dev/null 2>&1; then \
+			echo "$(GREEN)✅ Database is ready!$(RESET)"; \
+			break; \
+		fi; \
+		echo "$(YELLOW)⏳ Database not ready yet, waiting... ($$timeout seconds left)$(RESET)"; \
+		sleep 2; \
+		timeout=$$((timeout-2)); \
+	done; \
+	if [ $$timeout -le 0 ]; then \
+		echo "$(RED)❌ Database failed to start within 60 seconds$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)📝 Ensuring database schema is up to date...$(RESET)"
+	@cd packages/db && DATABASE_URL="postgresql://user:password@localhost:5432/saas_db" bun run push 2>/dev/null || echo "$(YELLOW)⚠️  Schema push skipped (may already be up to date)$(RESET)"
+	@echo "$(BOLD)$(GREEN)🚀 Starting local development services...$(RESET)"
+	@echo "$(CYAN)🌐 Frontend: http://localhost:3000$(RESET)"
+	@echo "$(CYAN)🔌 API: http://localhost:3001$(RESET)"
+	@echo "$(CYAN)🗄️  Database: postgresql://user:password@localhost:5432/saas_db$(RESET)"
+	@echo "$(YELLOW)💡 Press Ctrl+C to stop development servers$(RESET)"
+	@if [ -f .env ]; then \
+		echo "$(GREEN)✅ Loading environment variables from .env file$(RESET)"; \
+		export $$(cat .env | grep -v '^#' | xargs) && bun run dev; \
+	else \
+		echo "$(YELLOW)⚠️  No .env file found, using default DATABASE_URL$(RESET)"; \
+		DATABASE_URL="postgresql://user:password@localhost:5432/saas_db" bun run dev; \
+	fi
+
+dev-local-stop: ## 🛑 Stop local development database
+	@echo "$(BOLD)$(BLUE)🛑 Stopping local development database...$(RESET)"
+	@if docker-compose ps db | grep -q "Up"; then \
+		echo "$(YELLOW)🐳 Stopping database container...$(RESET)"; \
+		docker-compose stop db; \
+		echo "$(GREEN)✅ Database stopped!$(RESET)"; \
+	else \
+		echo "$(YELLOW)ℹ️  Database is not running$(RESET)"; \
+	fi
 
 start: up ## 🚀 Start all services (alias for 'up')
 
@@ -221,42 +272,3 @@ clean: ## 🧽 Clean up Docker volumes and node_modules
 	@echo "$(YELLOW)🗑️  Removing node_modules...$(RESET)"
 	@find . -name "node_modules" -type d -prune -exec rm -rf {} +
 	@echo "$(BOLD)$(GREEN)✅ Cleanup complete!$(RESET)"
-
-install: ## 📥 Install all dependencies
-	@echo "$(BOLD)$(BLUE)📦 Installing all dependencies...$(RESET)"
-	@bun install
-	@cd apps/web && bun install
-	@cd apps/api && bun install
-	@cd packages/db && bun install
-	@echo "$(GREEN)✅ All dependencies installed!$(RESET)"
-
-db-migrate:
-	@echo "Running database migrations..."
-	cd packages/db && DATABASE_URL="postgresql://user:password@localhost:5432/saas_db" bun run migrate
-
-db-seed:
-	@echo "Seeding database with sample data..."
-	cd packages/db && DATABASE_URL="postgresql://user:password@localhost:5432/saas_db" bun run seed
-
-db-studio:
-	@echo "Opening Drizzle Studio..."
-	@echo "Note: Drizzle Studio runs on https://local.drizzle.studio (not localhost)"
-	@cd packages/db && DATABASE_URL="postgresql://user:password@localhost:5432/saas_db" bun run studio
-
-db-generate:
-	@echo "Generating database migrations..."
-	cd packages/db && DATABASE_URL="postgresql://user:password@localhost:5432/saas_db" bun run generate
-
-db-push:
-	@echo "Pushing schema changes..."
-	cd packages/db && DATABASE_URL="postgresql://user:password@localhost:5432/saas_db" bun run push
-
-# Utility commands
-clean:
-	@echo "Cleaning up..."
-	docker-compose down -v
-	rm -rf node_modules apps/*/node_modules packages/*/node_modules
-
-install:
-	@echo "Installing dependencies..."
-	bun install
