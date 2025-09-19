@@ -53,8 +53,23 @@ bun run dev:local
 │   ├── db/           # Database schema & queries
 │   ├── ui/           # Shared UI components
 │   └── auth/         # Auth utilities
+├── docs/             # Comprehensive documentation
 └── docker/           # Docker configuration
 ```
+
+## 📚 Documentation
+
+Comprehensive architecture and deployment documentation is available in the [`./docs`](./docs/) directory:
+
+- **[📖 Documentation Index](./docs/README.md)** - Complete documentation overview
+- **[🏗️ Architecture Guide](./docs/architecture.md)** - Detailed system architecture
+- **[📊 Component Diagrams](./docs/component-diagrams.md)** - Visual system interactions
+- **[🔌 API Reference](./docs/api-reference.md)** - Complete API documentation
+- **[🚀 Deployment Guide](./docs/deployment-guide.md)** - Production deployment strategies
+- **[🗄️ Database Guide](./docs/database-deployment.md)** - Database setup and migrations
+- **[💳 Stripe Testing](./docs/how_to_test_stripe.md)** - Payment testing workflow
+
+For detailed technical information, deployment instructions, and architectural decisions, please refer to the [documentation index](./docs/README.md).
 
 ## 🔧 Key Features
 
