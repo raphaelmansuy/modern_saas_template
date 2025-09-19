@@ -163,7 +163,14 @@ export default function OrdersPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch orders')
+        const errorText = await response.text()
+        console.error('Orders API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          errorText
+        })
+        throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText} - ${errorText}`)
       }
 
       const data: OrdersResponse = await response.json()
@@ -172,7 +179,23 @@ export default function OrdersPage() {
       setTotalPages(data.pagination.totalPages)
     } catch (err) {
       console.error('Error fetching orders:', err)
-      setError('Failed to load orders. Please try again.')
+      
+      // Provide more specific error messages based on the error
+      if (err instanceof Error) {
+        if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+          setError('You need to be signed in to view your orders.')
+        } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
+          setError('You do not have permission to access this data.')
+        } else if (err.message.includes('404')) {
+          setError('Orders service not found. Please try again later.')
+        } else if (err.message.includes('500')) {
+          setError('Server error. Please try again in a few moments.')
+        } else {
+          setError('Failed to load orders. Please check your connection and try again.')
+        }
+      } else {
+        setError('Failed to load orders. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
