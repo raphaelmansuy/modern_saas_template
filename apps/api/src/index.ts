@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { cors } from 'hono/cors'
 import { createClerkClient } from '@clerk/clerk-sdk-node'
 import Stripe from 'stripe'
-import { eq, gte, lte, like, or, and, asc, desc, count } from 'drizzle-orm'
+import { eq, gte, lte, like, or, and, asc, desc, count, SQL } from 'drizzle-orm'
 import { db, pool, testConnection, getPoolStats } from '@saas/db'
 import { users, subscriptions, products, orders } from '@saas/db'
 import { StripeOrderSyncService } from './scripts/sync-orders'
@@ -714,7 +714,7 @@ app.get('/api/user/orders', async (c) => {
     }
 
     // Search functionality
-    let searchConditions = []
+    let searchConditions: SQL<unknown>[] = []
     if (search) {
       // Search by product name, description, or payment intent ID
       searchConditions = [
@@ -728,18 +728,12 @@ app.get('/api/user/orders', async (c) => {
     const offset = (page - 1) * limit
 
     // Build the query
-    let query = db
-      .select({
-        order: orders,
-        product: products,
-      })
-      .from(orders)
-      .leftJoin(products, eq(orders.productId, products.id))
-      .where(and(...whereConditions))
-
-    // Add search conditions if any
+    let queryConditions = [...whereConditions]
     if (searchConditions.length > 0) {
-      query = query.where(or(...searchConditions))
+      const searchCondition = or(...searchConditions)
+      if (searchCondition) {
+        queryConditions.push(searchCondition)
+      }
     }
 
     // Add sorting
@@ -747,18 +741,30 @@ app.get('/api/user/orders', async (c) => {
                       sortBy === 'status' ? orders.status :
                       sortBy === 'createdAt' ? orders.createdAt : orders.createdAt
 
-    query = sortOrder === 'asc' ? query.orderBy(asc(sortColumn)) : query.orderBy(desc(sortColumn))
+    let query = db
+      .select({
+        order: orders,
+        product: products,
+      })
+      .from(orders)
+      .leftJoin(products, eq(orders.productId, products.id))
+      .where(and(...queryConditions))
+      .orderBy(sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn))
 
     // Get total count for pagination
+    let totalQueryConditions = [...whereConditions]
+    if (searchConditions.length > 0) {
+      const searchCondition = or(...searchConditions)
+      if (searchCondition) {
+        totalQueryConditions.push(searchCondition)
+      }
+    }
+
     const totalQuery = db
       .select({ count: count() })
       .from(orders)
       .leftJoin(products, eq(orders.productId, products.id))
-      .where(and(...whereConditions))
-
-    if (searchConditions.length > 0) {
-      totalQuery.where(or(...searchConditions))
-    }
+      .where(and(...totalQueryConditions))
 
     const [totalResult] = await totalQuery
     const total = totalResult?.count || 0
